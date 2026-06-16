@@ -145,7 +145,7 @@ DevLoop is dependency-light — just `bash`, `python3`, and `git`. Three ways in
 **One-liner (curl bootstrap).** Clones the repo into `~/.devloop` and runs the CLI:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/<owner>/devloop/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/aithinkers/devloop/main/install.sh | sh
 # pick a host / scope:
 curl -fsSL .../install.sh | sh -s -- --host claude --scope home
 ```
@@ -165,7 +165,7 @@ curl -fsSL .../install.sh | sh -s -- --host claude --scope home
 **Claude Code plugin marketplace.** For Claude-Code-only users:
 
 ```
-/plugin marketplace add <owner>/devloop
+/plugin marketplace add aithinkers/devloop
 /plugin install devloop
 ```
 

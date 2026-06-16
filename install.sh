@@ -1,14 +1,14 @@
 #!/usr/bin/env sh
 # DevLoop bootstrap installer.
 #
-#   curl -fsSL https://raw.githubusercontent.com/<owner>/devloop/main/install.sh | sh
+#   curl -fsSL https://raw.githubusercontent.com/aithinkers/devloop/main/install.sh | sh
 #   curl -fsSL .../install.sh | sh -s -- --host claude --scope home
 #
 # Clones (or updates) DevLoop into ~/.devloop/src and runs `devloop install` with any
 # arguments you pass after `--`. If you've already cloned the repo, just run ./devloop.
 set -eu
 
-REPO_URL="${DEVLOOP_REPO:-https://github.com/your-org/devloop.git}"
+REPO_URL="${DEVLOOP_REPO:-https://github.com/aithinkers/devloop.git}"
 SRC="${DEVLOOP_HOME:-$HOME/.devloop}/src"
 
 if ! command -v git >/dev/null 2>&1; then echo "git is required"; exit 1; fi
