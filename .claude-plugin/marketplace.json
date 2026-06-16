@@ -1,6 +1,6 @@
 {
   "name": "devloop-marketplace",
-  "owner": { "name": "Srinivas" },
+  "owner": { "name": "aithinkers", "url": "https://github.com/aithinkers" },
   "plugins": [
     {
       "name": "devloop",

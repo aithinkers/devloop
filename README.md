@@ -21,7 +21,9 @@ Inspired by Garry Tan's [gstack](https://github.com/) (role-based skills) and ob
 
 ## Quickstart
 
-Dependency-light — just `bash`, `python3`, and `git`.
+Dependency-light — just `bash`, `python3`, and `git`. The installer is a shell script, so it
+runs on **macOS/Linux** (and **Windows via WSL or Git Bash**); the generated skills themselves
+are host-native and work wherever the host runs.
 
 ```bash
 # One-liner (clones into ~/.devloop and runs the installer):
@@ -122,7 +124,10 @@ agent for you) do the deterministic bookkeeping:
 
 ## Per-host notes
 
-All three hosts get the **same Agent Skills** (the `skills/` library). Each adds its own idioms:
+All three hosts get the **same Agent Skills** (the `skills/` library). Each adds its own idioms.
+Host-specific details below reflect each tool **as of mid-2026** — these are fast-moving products,
+so check the host's current docs if something has changed. Validated live on **Kiro 0.11**; the
+Claude marketplace install and the Codex layout are built to the documented conventions.
 
 - **Claude Code** — skills + thin `/spec-*` commands + `context-librarian`/`requirements-analyst`
   subagents. Installs to `./.claude/` or `~/.claude/`.
@@ -130,8 +135,8 @@ All three hosts get the **same Agent Skills** (the `skills/` library). Each adds
   lint/sync **hooks** + a disabled SharePoint **MCP** example (`.kiro/settings/mcp.json`, seeded
   only if absent). See [kiro/README.md](kiro/README.md).
 - **Codex** — skills into `.agents/skills/` + `AGENTS.md` as the gated-chain orchestrator (Codex
-  custom prompts are deprecated). Wire SharePoint via `config.toml` `[mcp_servers]`; see
-  [codex/AGENTS.md](codex/AGENTS.md).
+  custom prompts were deprecated in favor of skills, per OpenAI's docs). Wire SharePoint via
+  `config.toml` `[mcp_servers]`; see [codex/AGENTS.md](codex/AGENTS.md).
 
 ## Testing
 
@@ -145,8 +150,8 @@ all-host install/uninstall. Expect `52 passed, 0 failed`.
 
 ## How it's built
 
-All three hosts read the open [agentskills.io](https://agentskills.io) Agent Skill format, so
-DevLoop keeps **one** `skills/` library (generated from `core/`) and layers only thin
+All three hosts read the same `SKILL.md` Agent Skill format (the [agentskills.io](https://agentskills.io)
+shape), so DevLoop keeps **one** `skills/` library (generated from `core/`) and layers only thin
 host-specific wrappers on top — Claude's commands/subagents, Kiro's steering/hooks/MCP, Codex's
 `AGENTS.md`. A content change is made once; `./devloop build --check` fails if anything drifts.
 Details for contributors: [CONTRIBUTING.md](CONTRIBUTING.md).

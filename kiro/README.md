@@ -1,6 +1,7 @@
 # DevLoop for Kiro
 
-Targets **Kiro 0.9+** (Agent Skills, custom subagents, auto-steering, hooks). `devloop
+Targets **Kiro 0.9+** (Agent Skills, custom subagents, auto-steering, hooks; validated on Kiro
+0.11, mid-2026 — check Kiro's docs if the layout has since changed). `devloop
 install --host kiro` lands everything under `.kiro/` (project scope) or `~/.kiro/` (home):
 
 - **`skills/<role>/SKILL.md`** — one Agent Skill per role (Context Librarian, Requirements
