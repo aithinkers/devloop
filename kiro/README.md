@@ -20,6 +20,35 @@ install --host kiro` lands everything under `.kiro/` (project scope) or `~/.kiro
   them from the Agent Hooks panel.
 - **`tools/`** — `wikikit.py` (registry/sync/scaffold/status/commit/lint) and `ingest.py`
   (multi-format folder ingest), made executable on install.
+- **`settings/mcp.json`** — a disabled, secret-free **example** MCP config for pulling
+  SharePoint into the Context Librarian (see below). Installed **only if you don't already have
+  one** — it never overwrites your real MCP config, and is left untouched on uninstall.
+
+## SharePoint (and other MCP sources)
+
+The Context Librarian can read SharePoint via an MCP server (Kiro's native MCP mechanism),
+configured in `.kiro/settings/mcp.json` (workspace) or `~/.kiro/settings/mcp.json` (global).
+There is no single official SharePoint MCP server, so the shipped example is **disabled**;
+point it at the Microsoft Graph / SharePoint MCP server you use, pass the token via an env var
+(never hardcode secrets), and flip `disabled` to `false`:
+
+```json
+{
+  "mcpServers": {
+    "sharepoint": {
+      "command": "npx",
+      "args": ["-y", "<your-sharepoint-or-microsoft-graph-mcp-server>"],
+      "env": { "SHAREPOINT_TOKEN": "${SHAREPOINT_TOKEN}" },
+      "disabled": false,
+      "autoApprove": []
+    }
+  }
+}
+```
+
+Once a server is connected, ingest its content into a wiki's `raw/` (or read it directly) and
+compile as usual. If you have no MCP server, fall back to synced files / exported docs and
+`ingest.py`.
 
 ## How it relates to Kiro's native specs
 

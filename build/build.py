@@ -28,7 +28,7 @@ WIKIKIT = os.path.join(REPO, "tools", "wikikit.py")
 GEN_PREFIXES = [
     "claude-code/skills/", "claude-code/commands/", "claude-code/agents/",
     "codex/prompts/", "codex/tools/",
-    "kiro/skills/", "kiro/agents/", "kiro/steering/", "kiro/hooks/", "kiro/tools/",
+    "kiro/skills/", "kiro/agents/", "kiro/steering/", "kiro/hooks/", "kiro/settings/", "kiro/tools/",
 ]
 
 def rd(p):
@@ -146,6 +146,12 @@ def build_kiro(tooldir, adapter, roles, order, tools, out):
                 "version": "1", "when": {"type": h["trigger"]},
                 "then": {"type": "runCommand", "command": h["command"]}}
         out[f"{tooldir}/hooks/{h['file']}.kiro.hook"] = (json.dumps(hook, indent=2) + "\n").encode()
+    # Example MCP config (schema-clean: only mcpServers). Installed only-if-absent so it never
+    # clobbers a real .kiro/settings/mcp.json. SharePoint server ships disabled by default.
+    mcp = adapter.get("mcp")
+    if mcp:
+        out[f"{tooldir}/settings/mcp.json"] = (
+            json.dumps({"mcpServers": mcp["servers"]}, indent=2) + "\n").encode()
     _tools_into(tooldir, adapter, tools, out)
 
 BUILDERS = {"claude-code": build_claude, "codex": build_codex, "kiro": build_kiro}

@@ -264,6 +264,23 @@ done
   && ok "Kiro hooks are valid userTriggered/runCommand JSON" || no "Kiro hooks invalid/missing"
 # No leftover pre-0.9 artifacts
 [ ! -e "$K/specs/_template" ] && ok "no stale specs/_template installed" || no "stale specs/_template present"
+# MCP example: valid JSON, schema-clean (only mcpServers), SharePoint shipped DISABLED, no secrets
+if python3 - "$K/settings/mcp.json" <<'PY'
+import json,sys
+d=json.load(open(sys.argv[1]))
+assert list(d)==["mcpServers"], d
+s=d["mcpServers"]["sharepoint"]
+assert s["disabled"] is True
+assert s["env"]["SHAREPOINT_TOKEN"]=="${SHAREPOINT_TOKEN}"   # env ref, not a literal secret
+PY
+then ok "MCP example is valid, disabled, secret-free"; else no "MCP example invalid/enabled/leaky"; fi
+cd "$TMP"
+
+echo "[12g] Kiro MCP config is user-owned: install never clobbers an existing mcp.json"
+MT="$TMP/kiro-mcp"; mkdir -p "$MT/.kiro/settings"
+printf '{"mcpServers":{"mine":{"command":"node","args":["x.js"]}}}\n' > "$MT/.kiro/settings/mcp.json"
+( cd "$MT" && HOME="$MT" "$HERE/devloop" install --host kiro --scope project >/dev/null 2>&1 )
+grep -q '"mine"' "$MT/.kiro/settings/mcp.json" && ok "existing mcp.json preserved on install" || no "install clobbered user mcp.json"
 cd "$TMP"
 
 echo "[12f] Kiro skill bodies are byte-identical to the Claude skill bodies (single source)"

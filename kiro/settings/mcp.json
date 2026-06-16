@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "sharepoint": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "<your-sharepoint-or-microsoft-graph-mcp-server>"
+      ],
+      "env": {
+        "SHAREPOINT_TOKEN": "${SHAREPOINT_TOKEN}"
+      },
+      "disabled": true,
+      "autoApprove": []
+    }
+  }
+}

@@ -46,5 +46,17 @@
       "trigger": "userTriggered",
       "command": "python3 tools/wikikit.py sync --all"
     }
-  ]
+  ],
+  "mcp": {
+    "_note": "Example only — installed to .kiro/settings/mcp.json ONLY IF that file is absent (never clobbers your real MCP config). The Context Librarian can read SharePoint via a Microsoft Graph / SharePoint MCP server; there is no single official one, so fill in `args` with the server you use, set `disabled` to false, and provide the token via the referenced env var (never hardcode secrets).",
+    "servers": {
+      "sharepoint": {
+        "command": "npx",
+        "args": ["-y", "<your-sharepoint-or-microsoft-graph-mcp-server>"],
+        "env": { "SHAREPOINT_TOKEN": "${SHAREPOINT_TOKEN}" },
+        "disabled": true,
+        "autoApprove": []
+      }
+    }
+  }
 }

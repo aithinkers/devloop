@@ -2,6 +2,18 @@
 
 All notable changes to DevLoop are documented here. Versioning is semantic.
 
+## [0.9.1]
+Kiro QA + SharePoint/MCP follow-up (validated against a live Kiro 0.11 install):
+- Verified every generated Kiro artifact (skills, subagents, auto-steering, hooks) conforms to
+  the documented 0.9–0.11 schemas — name==folder, agentskills.io frontmatter, allowed subagent
+  tool vocab, valid `inclusion`, and `userTriggered`/`runCommand` hooks.
+- **Wired the SharePoint promise to Kiro's native MCP.** Ship a disabled, secret-free example
+  `.kiro/settings/mcp.json` (env-var token ref, schema-clean `mcpServers`). It installs **only
+  if absent** — it never overwrites your real MCP config and is left untouched on uninstall.
+  kiro/README documents pointing it at a Microsoft Graph / SharePoint MCP server.
+- **tests:** smoke test 34 → 36 — the MCP example is valid/disabled/secret-free, and install
+  never clobbers an existing `mcp.json`.
+
 ## [0.9.0]
 Modernized the **Kiro** integration to the Kiro 0.9 model (Agent Skills, custom subagents,
 auto-steering, hooks). Previously Kiro got a single manual steering file that hand-restated the
