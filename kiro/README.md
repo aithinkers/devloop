@@ -4,15 +4,15 @@ Targets **Kiro 0.9+** (Agent Skills, custom subagents, auto-steering, hooks; val
 0.11, mid-2026 — check Kiro's docs if the layout has since changed). `devloop
 install --host kiro` lands everything under `.kiro/` (project scope) or `~/.kiro/` (home):
 
-- **`skills/<role>/SKILL.md`** — one Agent Skill per role (Context Librarian, Requirements
-  Analyst, Story Writer, Story Reviewer, Jira Organizer), each bundling its `shared/`
-  templates and `scripts/`. Kiro loads only the name + description until a skill is relevant,
-  then pulls in the full method — so the five roles **auto-trigger** by what you're doing. To
-  invoke one explicitly, mention `$context-librarian` (etc.) or pick it from the `/skills` menu.
-  (agentskills.io format — the same packages DevLoop ships for Claude Code.)
-- **`agents/*.md`** — custom subagents for the two isolated-context roles (`context-librarian`,
-  `requirements-analyst`); invoke with `/context-librarian …`, or let Kiro auto-select by
-  description. Each is a thin pointer to its skill (it never restates the method).
+- **`skills/<role>/SKILL.md`** — one Agent Skill per role (Context Librarian, the optional
+  Business Analyst (BRD), Requirements Analyst, Story Writer, Story Reviewer, Jira Organizer),
+  each bundling its `shared/` templates and `scripts/`. Kiro loads only the name + description
+  until a skill is relevant, then pulls in the full method — so the roles **auto-trigger** by
+  what you're doing. To invoke one explicitly, mention `$context-librarian` (etc.) or pick it
+  from the `/skills` menu. (agentskills.io format — the same packages DevLoop ships for Claude.)
+- **`agents/*.md`** — custom subagents for the three isolated-context roles (`context-librarian`,
+  `business-analyst`, `requirements-analyst`); invoke with `/context-librarian …`, or let Kiro
+  auto-select by description. Each is a thin pointer to its skill (it never restates the method).
 - **`steering/devloop.md`** — a lean `inclusion: auto` orchestrator that only **sequences** the
   five gated phases and points at each skill. It carries no role bodies, so nothing
   duplicates the skills. (Reference it explicitly with `#devloop` if you ever want to.)

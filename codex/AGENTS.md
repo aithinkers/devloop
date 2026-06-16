@@ -10,10 +10,16 @@ by description, or invoke `$<skill>` / pick it from `/skills`). This file only s
    text). Compile sources into an interlinked LLM-Wiki under `knowledge/` (concept articles
    with [[wikilinks]] + source-traceable frontmatter + an `index.md` routing layer). Run FIRST
    when source material exists.
-1. **`requirements-analyst` skill** — Read `knowledge/wiki/index.md` if present, open relevant
-   concept articles, and only ask about gaps. Interview Socratically, ONE question at a time
-   with A/B/C options, until the checklist is covered. Produce `requirements.md` (numbered
-   FR/NFR) with explicit sign-off. No solutioning, no stories yet.
+0b. **`business-analyst` skill** *(optional — waterfall/regulated/SI teams)* — produce a
+   Business Requirements Document (`brd.md`): business objectives + metrics (`OBJ-n`), scope,
+   stakeholders, current/future state, and numbered business requirements (`BR-n`) in business
+   language (no "system shall"), with sign-off. Agile teams skip this and go straight to
+   requirements. When a BRD exists, later phases trace `BR → FR → US`.
+1. **`requirements-analyst` skill** — Read `knowledge/wiki/index.md` if present (and `brd.md` if
+   it exists — tag each FR/NFR with the `BR-n` it serves), open relevant concept articles, and
+   only ask about gaps. Interview Socratically, ONE question at a time with A/B/C options, until
+   the checklist is covered. Produce `requirements.md` (numbered FR/NFR) with explicit sign-off.
+   No solutioning, no stories yet.
 2. **`story-writer` skill** — Convert approved `requirements.md` into epics and INVEST user
    stories with Gherkin acceptance criteria and a traceability matrix. Produce `stories.md`.
 3. **`story-reviewer` skill** — Independently review against INVEST, Definition of Ready,

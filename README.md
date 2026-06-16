@@ -146,12 +146,12 @@ Claude marketplace install and the Codex layout are built to the documented conv
 ## Testing
 
 ```bash
-bash test/smoke_test.sh    # 53 checks, no LLM, no network
+bash test/smoke_test.sh    # 54 checks, no LLM, no network
 ```
 
 End to end: registry + scaffold, change-detection, the compile step, lint + incremental cache, a
 git-backed wiki, cross-wiki lint, Jira validation, build freshness, single-source skills, and
-all-host install/uninstall. Expect `53 passed, 0 failed`.
+all-host install/uninstall. Expect `54 passed, 0 failed`.
 
 ## How it's built
 

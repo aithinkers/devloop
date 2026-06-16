@@ -2,6 +2,19 @@
 
 All notable changes to DevLoop are documented here. Versioning is semantic.
 
+## [0.12.1]
+Integrate the BRD phase across every host entrypoint (review follow-up — the role generated, but
+two authored files + the requirements summary lagged):
+- **Codex orchestrator** (`codex/AGENTS.md`, authored) now includes the optional BRD step and a
+  BRD-aware requirements step — Codex users see the same six-step optional-BRD flow.
+- **Kiro host README** updated: six roles (one optional) and three subagents incl.
+  `business-analyst` (was "five roles / two subagents").
+- **Thin Requirements Analyst wrappers** now mention reading `brd.md`: the `requirements-analyst`
+  summary in `roles.json` carries the BRD-aware framing, so the Claude command + subagent and the
+  Kiro steering line all pick it up on rebuild.
+- **New guard:** smoke test asserts `codex/AGENTS.md` references every role in `roles.json`, so the
+  authored orchestrator can't silently go stale when a role is added. Tests 53 → 54.
+
 ## [0.12.0]
 Added an **optional Business Analyst (BRD)** phase for waterfall/regulated/SI teams that need a
 formal Business Requirements Document + sign-off before functional work:

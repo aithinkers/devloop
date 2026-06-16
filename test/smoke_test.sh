@@ -385,6 +385,15 @@ echo "[12o] optional BRD role generates across hosts (skill + command + subagent
   || no "BRD role not generated/wired correctly"
 cd "$TMP"
 
+echo "[12p] authored Codex orchestrator (AGENTS.md) references every role — can't go stale"
+missing=""
+for rid in $(python3 -c "import json;[print(r['id']) for r in json.load(open('$HERE/core/roles.json'))['roles']]"); do
+  grep -q "$rid" "$HERE/codex/AGENTS.md" || missing="$missing $rid"
+done
+[ -z "$missing" ] && ok "codex/AGENTS.md sequences all roles (incl. business-analyst)" \
+  || no "codex/AGENTS.md is stale — missing role(s):$missing"
+cd "$TMP"
+
 echo "[12h] Claude plugin manifest: version tracks VERSION, no redundant path keys, has metadata"
 VER="$(cat "$HERE/VERSION")"
 if python3 - "$HERE" "$VER" <<'PY'
