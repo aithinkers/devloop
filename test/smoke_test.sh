@@ -370,8 +370,19 @@ echo "[12f] ONE canonical skills/ library at repo root — no per-host skill cop
 n=$(ls -d "$HERE"/skills/*/ 2>/dev/null | wc -l | tr -d ' ')
 fork=""
 for stale in claude-code codex/skills kiro/skills; do [ -e "$HERE/$stale" ] && fork="$fork $stale"; done
-{ [ "$n" -eq 5 ] && [ -f "$HERE/skills/context-librarian/SKILL.md" ] && [ -z "$fork" ]; } \
-  && ok "single root skills/ (5 roles), no per-host copies to fork" || no "skills not single-source (n=$n fork:$fork)"
+{ [ "$n" -eq 6 ] && [ -f "$HERE/skills/context-librarian/SKILL.md" ] && [ -z "$fork" ]; } \
+  && ok "single root skills/ (6 roles), no per-host copies to fork" || no "skills not single-source (n=$n fork:$fork)"
+cd "$TMP"
+
+echo "[12o] optional BRD role generates across hosts (skill + command + subagent) and is marked optional"
+{ [ -f "$HERE/skills/business-analyst/SKILL.md" ] \
+  && [ -f "$HERE/commands/spec-brd.md" ] \
+  && [ -f "$HERE/agents/business-analyst.md" ] \
+  && [ -f "$HERE/kiro/agents/business-analyst.md" ] \
+  && grep -qi 'optional' "$HERE/skills/business-analyst/SKILL.md" \
+  && grep -q '^skills: \[business-analyst\]$' "$HERE/agents/business-analyst.md"; } \
+  && ok "BRD role: skill + /spec-brd command + subagent on all hosts, flagged optional" \
+  || no "BRD role not generated/wired correctly"
 cd "$TMP"
 
 echo "[12h] Claude plugin manifest: version tracks VERSION, no redundant path keys, has metadata"

@@ -42,6 +42,7 @@ GEN_PREFIXES = [
 # Claude subagent tool vocab (full Claude tool names), per role flagged subagent in roles.json.
 CLAUDE_SUBAGENT_TOOLS = {
     "context-librarian": "Read, Write, Edit, Glob, Grep, Bash, WebFetch",
+    "business-analyst": "Read, Write, Edit, Glob, Grep",
     "requirements-analyst": "Read, Write, Edit, Glob, Grep",
 }
 
@@ -107,7 +108,7 @@ def build_kiro(adapter, roles, order, out):
     st = adapter["steering"]
     lines = [f"---\ninclusion: auto\nname: {st['name']}\ndescription: {st['description']}\n---\n",
              "# DevLoop — business-analysis chain\n",
-             "Turn a feature idea into a review-ready backlog through five **gated** roles. Each",
+             "Turn a feature idea into a review-ready backlog through a chain of **gated** roles. Each",
              "phase gates the next — do not skip ahead. Adopt the matching **Agent Skill** for each",
              "phase; the skill carries the full method, so this file only sequences them.\n"]
     for i, rid in enumerate(order):

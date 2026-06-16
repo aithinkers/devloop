@@ -3,6 +3,7 @@
   "kind": "kiro",
   "subagent_tools": {
     "context-librarian": ["read", "write", "shell", "web"],
+    "business-analyst": ["read", "write"],
     "requirements-analyst": ["read", "write"]
   },
   "steering": {

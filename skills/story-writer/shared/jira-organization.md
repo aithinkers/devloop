@@ -11,8 +11,11 @@ Use two Jira projects so analysis artifacts don't clutter the delivery board:
 | **BA** (Business Analysis) | discovery & analysis | **Initiative**, **Requirement**, **Decision**, Epic |
 | **TECH** (Engineering) | implementation | **Epic**, **Story**, **Task**, **Bug**, **Sub-task** |
 
-- **Requirement** (BA) — one issue per FR/NFR, traced from `requirements.md`. Lets the
-  business sign off and track coverage independently of delivery.
+- **Initiative** (BA) — one per BRD business objective (`OBJ-n`) when a `brd.md` exists; the big
+  bet that epics and requirements roll up to.
+- **Requirement** (BA) — one issue per FR/NFR, traced from `requirements.md` (and, if a BRD
+  exists, linked up to its `BR-n`). Lets the business sign off and track coverage independently
+  of delivery.
 - **Decision** (BA) — one issue per decision mined into the wikis (an ADR-style record).
 - **Epic / Story / Task / Bug / Sub-task** (TECH) — the delivery backlog from `stories.md`.
 - Link delivery items back to their BA Requirement(s) with an issue link ("implements").

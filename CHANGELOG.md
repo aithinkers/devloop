@@ -2,6 +2,22 @@
 
 All notable changes to DevLoop are documented here. Versioning is semantic.
 
+## [0.12.0]
+Added an **optional Business Analyst (BRD)** phase for waterfall/regulated/SI teams that need a
+formal Business Requirements Document + sign-off before functional work:
+- New role `business-analyst` (`/spec-brd`) → `brd.md`: business objectives + success metrics
+  (`OBJ-n`), scope, stakeholders, current/future state, and numbered business requirements
+  (`BR-n`) in **business language** (no "system shall"), with a sign-off gate. Grounded in the
+  wikis like the other roles; ships as a skill (+ subagent) to all three hosts via the same
+  single-source engine — `core/06-business-analyst.md` + `core/shared/brd-template.md`.
+- **`BR → FR → US` traceability:** the Requirements Analyst now reads `brd.md` when present and
+  tags each FR/NFR with the `BR-`/`OBJ-` it serves (flagging scope-creep FRs and uncovered BRs);
+  the Jira Organizer maps `OBJ-`→Initiative and `BR-`→Requirement.
+- **Optional by design:** clearly marked optional everywhere; agile teams skip it and start at
+  the Requirements Analyst. The chain is no longer described as a fixed "five roles."
+- **tests:** smoke test 52 → 53 — the BRD role generates as skill + `/spec-brd` command +
+  subagent on all hosts and is flagged optional; role count guard updated to 6.
+
 ## [0.11.4]
 Make the whole CLI safe for install paths with shell metacharacters (review follow-up):
 - The `run` helper built shell-command strings with embedded single-quoted paths and executed

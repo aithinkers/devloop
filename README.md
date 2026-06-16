@@ -51,15 +51,20 @@ the role skill (`$context-librarian` or `/skills`).
 
 ## How it works
 
-When you ask to build something, DevLoop *doesn't* jump to stories. It steps back through five
-**gated** roles — each one finishes (and you sign off) before the next begins:
+When you ask to build something, DevLoop *doesn't* jump to stories. It steps back through a chain
+of **gated** roles — each one finishes (and you sign off) before the next begins:
 
 1. **Context Librarian** — asks where your knowledge lives (docs, meeting minutes, SharePoint,
    wikis, repos, URLs) and **compiles it into a library of LLM-Wikis** you can trust. Run this
    first when you have source material.
-2. **Requirements Analyst** — reads the wikis, then interviews you Socratically, **one question
-   at a time**, only about the gaps. Produces `requirements.md` (numbered FR/NFR, each traced to
-   its source).
+1b. **Business Analyst (BRD)** *(optional)* — for waterfall/regulated/SI teams that need a formal
+   **Business Requirements Document**: business objectives + metrics, scope, stakeholders,
+   current/future state, and numbered business requirements (`BR-n`) with sign-off → `brd.md`.
+   Agile teams skip this and start at the Requirements Analyst. The later phases trace
+   `BR → FR → US` when a BRD exists.
+2. **Requirements Analyst** — reads the wikis (and the BRD if present), then interviews you
+   Socratically, **one question at a time**, only about the gaps. Produces `requirements.md`
+   (numbered FR/NFR, each traced to its source — and to a `BR` when a BRD exists).
 3. **Story Writer** — turns approved requirements into epics + INVEST user stories with Gherkin
    acceptance criteria and a traceability matrix → `stories.md`.
 4. **Story Reviewer** — an independent pass for INVEST, Definition of Ready, coverage, and AC
@@ -141,12 +146,12 @@ Claude marketplace install and the Codex layout are built to the documented conv
 ## Testing
 
 ```bash
-bash test/smoke_test.sh    # 52 checks, no LLM, no network
+bash test/smoke_test.sh    # 53 checks, no LLM, no network
 ```
 
 End to end: registry + scaffold, change-detection, the compile step, lint + incremental cache, a
 git-backed wiki, cross-wiki lint, Jira validation, build freshness, single-source skills, and
-all-host install/uninstall. Expect `52 passed, 0 failed`.
+all-host install/uninstall. Expect `53 passed, 0 failed`.
 
 ## How it's built
 

@@ -29,6 +29,11 @@ wikis (run `wikikit.py registry list` to see them).
 - **If none exist:** offer to run the Context Librarian role first to build the
   wiki library. If the user declines, proceed cold.
 
+**If a BRD exists (`brd.md`):** read it first and treat its business requirements as the frame —
+tag each `FR`/`NFR` with the `BR-`/`OBJ-` it serves (in the Source refs column), and flag any
+`FR` that serves no `BR` (possible scope creep) and any `BR` with no `FR` (coverage gap). This
+gives a `BR → FR → US` chain. If there's no `brd.md`, just proceed (it's optional).
+
 ## Operating principles
 - **One question at a time.** Never dump a questionnaire. Ask the single most
   information-rich question, wait for the answer, then ask the next.

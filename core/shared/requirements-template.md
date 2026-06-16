@@ -23,11 +23,12 @@ What problem, for whom, why now. What success looks like. Cost of doing nothing.
 How this is handled today; the workaround or gap being replaced.
 
 ## 5. Functional requirements
-_Source refs cite the context pack (e.g. [S3]); ⚠ marks a conflict with existing docs._
+_Source refs cite the context pack (e.g. [S3]); ⚠ marks a conflict with existing docs. If a BRD
+exists, also cite the business requirement each FR serves (e.g. BR-1) in Source refs._
 
 | ID | Requirement | Priority (MoSCoW) | Source refs | Notes |
 |---|---|---|---|---|
-| FR-1 | The system shall … | Must | [S3] | |
+| FR-1 | The system shall … | Must | [S3], BR-1 | |
 | FR-2 | | | | |
 
 ## 6. Non-functional requirements
