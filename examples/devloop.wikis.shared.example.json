@@ -1,0 +1,20 @@
+{
+  "_note": "Reuse shared company wikis across projects. Build the devops/integrations wikis ONCE in their own git repos (commit the compiled knowledge/wiki/), then drop this registry into any project and `wikikit.py sync --all`. `contains: \"wiki\"` = already compiled, reference only (no recompile); use `contains: \"sources\"` instead if the repo holds raw docs you want compiled per project. Cross-link shared concepts as [[devops:Release Pipeline]] / [[integrations:SSO]]; `wikikit.py lint --all` checks they resolve.",
+  "version": 1,
+  "cache_dir": ".devloop/wikis",
+  "wikis": [
+    { "id": "project", "kind": "project", "role": "primary",
+      "source": { "type": "local", "path": "." },
+      "wiki_path": "knowledge/wiki" },
+
+    { "id": "devops", "kind": "devops",
+      "source": { "type": "git", "url": "git@github.com:acme/devops-wiki.git",
+                  "ref": "main", "contains": "wiki" },
+      "wiki_path": ".devloop/wikis/devops/knowledge/wiki" },
+
+    { "id": "integrations", "kind": "integrations",
+      "source": { "type": "git", "url": "git@github.com:acme/integrations-wiki.git",
+                  "ref": "main", "contains": "wiki" },
+      "wiki_path": ".devloop/wikis/integrations/knowledge/wiki" }
+  ]
+}

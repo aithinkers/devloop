@@ -92,6 +92,14 @@ subfolder, extracting text from markdown, `.docx/.pptx/.xlsx`, `.drawio`, `.vsdx
 PDFs (scanned files/images are flagged for the agent to read with vision). SharePoint comes in
 via an MCP connector (see the per-host notes) or synced files.
 
+**Reuse shared wikis across projects.** Build company-wide `devops`/`integrations` wikis **once**
+in their own git repos, then reference them from any project: list them in `devloop.wikis.json`
+with `contains: "wiki"` (already compiled) and `wikikit.py sync --all` clones them into
+`.devloop/wikis/`. `/spec-requirements` pulls them in automatically and you link across with
+`[[devops:Release Pipeline]]`. Ready-to-edit registry + recipe:
+[examples/devloop.wikis.shared.example.json](examples/devloop.wikis.shared.example.json) and
+[examples/README.md](examples/README.md).
+
 ## Jira: a plan, plus optional config
 
 The Jira Organizer recommends splitting a **BA** project (`Initiative`, `Requirement`,
