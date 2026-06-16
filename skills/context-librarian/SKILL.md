@@ -103,6 +103,6 @@ the divergence rather than clobbering).
 
 ## Handoff
 > Wiki library built/refreshed: <list wikis + concept counts>. Run the
-> **requirements-analyst** role (`/spec-requirements`) — it reads the registry, navigates the
+> **requirements-analyst** role — it reads the registry, navigates the
 > primary project wiki, and pulls in the referenced wikis (integrations, devops, codebase)
 > as needed.

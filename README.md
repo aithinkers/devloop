@@ -43,8 +43,9 @@ from the plugin marketplace:
 
 Then just describe a feature and let the chain auto-trigger. To call a phase directly, the
 surface differs by host: **Claude Code** has `/spec-context`, `/spec-requirements`, … commands;
-**Kiro** uses the role skills/subagents (`/context-librarian`, …, or `#devloop` steering);
-**Codex** invokes the role skill (`$context-librarian` or `/skills`).
+**Kiro** auto-triggers the role skills (invoke one with `$context-librarian` or via `/skills`;
+the two subagents also run as `/context-librarian` & `/requirements-analyst`); **Codex** invokes
+the role skill (`$context-librarian` or `/skills`).
 
 ## How it works
 
@@ -125,12 +126,12 @@ All three hosts get the **same Agent Skills** (the `skills/` library). Each adds
 ## Testing
 
 ```bash
-bash test/smoke_test.sh    # 46 checks, no LLM, no network
+bash test/smoke_test.sh    # 47 checks, no LLM, no network
 ```
 
 End to end: registry + scaffold, change-detection, the compile step, lint + incremental cache, a
 git-backed wiki, cross-wiki lint, Jira validation, build freshness, single-source skills, and
-all-host install/uninstall. Expect `46 passed, 0 failed`.
+all-host install/uninstall. Expect `47 passed, 0 failed`.
 
 ## How it's built
 

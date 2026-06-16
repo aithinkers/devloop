@@ -59,10 +59,10 @@ conforms to the configured Jira (validate it first with `wikikit.py jira validat
 - **Epic Link** to the parent epic; note Story Points if that custom field is configured.
 Add a **Jira mapping** table to `stories.md` (see the template) with these columns. If no
 config exists, fall back to the lightweight `Component(s)`/`Labels` columns and point the
-user to `/spec-jira` to set the config up.
+user to the **jira-organizer** role to set the config up.
 
 ## Handoff
 When done, tell the user:
-> Backlog drafted. Run the **story-reviewer** role (`/spec-review`) for an INVEST and
-> Definition-of-Ready quality pass, then **/spec-jira** for a Jira organization plan
+> Backlog drafted. Run the **story-reviewer** role for an INVEST and
+> Definition-of-Ready quality pass, then the **jira-organizer** role for a Jira organization plan
 > (epics, components, labels) before you commit these to your tracker.

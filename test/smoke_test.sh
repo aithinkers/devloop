@@ -276,21 +276,50 @@ PY
 then ok "MCP example is valid, disabled, secret-free"; else no "MCP example invalid/enabled/leaky"; fi
 cd "$TMP"
 
-echo "[12k] Kiro hook commands resolve + run from the workspace root (install path, not bare tools/)"
+# Seed a deterministic registry (one scaffolded local wiki) in $1 so lint/sync both exit 0,
+# using the wikikit at $2 (exercises whatever path the host installed).
+_devloop_local_registry(){
+  ( cd "$1" && python3 "$2" registry init >/dev/null 2>&1 )
+  python3 - "$1/devloop.wikis.json" <<'PY'
+import json,sys
+p=sys.argv[1]; r=json.load(open(p))
+r["wikis"]=[{"id":"project","kind":"project","role":"primary",
+             "source":{"type":"local","path":"."},"wiki_path":"knowledge/wiki"}]
+json.dump(r,open(p,"w"),indent=2)
+PY
+  ( cd "$1" && python3 "$2" scaffold --wiki project >/dev/null 2>&1 )
+}
+_hook_cmd(){ python3 -c "import json,sys;print(json.load(open(sys.argv[1]))['then']['command'])" "$1"; }
+
+echo "[12k] EVERY shipped Kiro hook command runs verbatim from the workspace (project scope)"
 HK="$TMP/kiro-hookrun"; mkdir -p "$HK"
 ( cd "$HK" && HOME="$HK" "$HERE/devloop" install --host kiro --scope project >/dev/null 2>&1 )
-hp_ok=1; sp=""
-for h in "$HERE"/kiro/hooks/*.kiro.hook; do
-  cmd=$(python3 -c "import json,sys;print(json.load(open(sys.argv[1]))['then']['command'])" "$h")
-  sp=$(printf '%s' "$cmd" | grep -oE '[^ ]+\.py')      # the script the hook shells out to
-  [ -f "$HK/$sp" ] || { hp_ok=0; echo "    unresolved: $sp (from: $cmd)"; }
+_devloop_local_registry "$HK" ".kiro/tools/wikikit.py"
+hk_run=1
+for h in "$HK"/.kiro/hooks/*.kiro.hook; do
+  cmd=$(_hook_cmd "$h"); ( cd "$HK" && eval "$cmd" >/dev/null 2>&1 ) || { hk_run=0; echo "    failed: $cmd"; }
 done
-[ "$hp_ok" = 1 ] && ok "every hook's script path resolves at the install location (.kiro/tools)" \
-  || no "hook command path unresolved — would fail when Kiro runs it from the workspace root"
-# run the helper verbatim from the workspace root, exactly as the hook would
-if ( cd "$HK" && python3 "$sp" registry init >/dev/null 2>&1 && [ -f "$HK/devloop.wikis.json" ] ); then
-  ok "hook helper executes verbatim from workspace root (python3 $sp …)"
-else no "hook helper did not execute as shipped from the workspace root"; fi
+[ "$hk_run" = 1 ] && ok "all shipped hook commands run verbatim from the workspace (exit 0)" \
+  || no "a shipped hook command failed to run as written from the workspace"
+cd "$TMP"
+
+echo "[12l] home-scope Kiro hooks are absolute and run from an UNRELATED workspace"
+HM="$TMP/kiro-home"; mkdir -p "$HM"
+HOME="$HM" "$HERE/devloop" install --host kiro --scope home >/dev/null 2>&1
+abs_ok=1
+for h in "$HM"/.kiro/hooks/*.kiro.hook; do
+  case "$(_hook_cmd "$h")" in *"python3 .kiro/tools/"*) abs_ok=0; echo "    workspace-relative: $(_hook_cmd "$h")";; esac
+done
+[ "$abs_ok" = 1 ] && ok "home-scope hook commands are absolute (not workspace-relative)" \
+  || no "home-scope hook command is workspace-relative — breaks outside ~/.kiro"
+WS="$TMP/kiro-otherws"; mkdir -p "$WS"
+_devloop_local_registry "$WS" "$HM/.kiro/tools/wikikit.py"   # set up via the absolute installed path
+hh_run=1
+for h in "$HM"/.kiro/hooks/*.kiro.hook; do
+  cmd=$(_hook_cmd "$h"); ( cd "$WS" && eval "$cmd" >/dev/null 2>&1 ) || { hh_run=0; echo "    failed from other ws: $cmd"; }
+done
+[ "$hh_run" = 1 ] && ok "home-scope hooks run verbatim from an unrelated workspace" \
+  || no "home-scope hook failed to run from another workspace"
 cd "$TMP"
 
 echo "[12g] Kiro MCP config is user-owned: install never clobbers an existing mcp.json"

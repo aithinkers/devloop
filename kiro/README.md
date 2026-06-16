@@ -6,9 +6,9 @@ install --host kiro` lands everything under `.kiro/` (project scope) or `~/.kiro
 - **`skills/<role>/SKILL.md`** — one Agent Skill per role (Context Librarian, Requirements
   Analyst, Story Writer, Story Reviewer, Jira Organizer), each bundling its `shared/`
   templates and `scripts/`. Kiro loads only the name + description until a skill is relevant,
-  then pulls in the full method — so the five roles **auto-trigger** by what you're doing.
-  They also work as `/<role>` slash commands. (agentskills.io format — the same packages
-  DevLoop ships for Claude Code.)
+  then pulls in the full method — so the five roles **auto-trigger** by what you're doing. To
+  invoke one explicitly, mention `$context-librarian` (etc.) or pick it from the `/skills` menu.
+  (agentskills.io format — the same packages DevLoop ships for Claude Code.)
 - **`agents/*.md`** — custom subagents for the two isolated-context roles (`context-librarian`,
   `requirements-analyst`); invoke with `/context-librarian …`, or let Kiro auto-select by
   description. Each is a thin pointer to its skill (it never restates the method).

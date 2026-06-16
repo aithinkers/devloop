@@ -48,6 +48,15 @@ install_kiro(){ local scope="$1" d; d="$(kiro_dir "$scope")"
   run "cp '$REPO/kiro/hooks/'*.kiro.hook    '$d/hooks/'"
   run "cp '$REPO/tools/'*.py                '$d/tools/'"
   run "chmod +x '$d/tools/'*.py"
+  # Hooks/steering reference `.kiro/tools/…` — correct for a project install (Kiro runs hook
+  # commands from the workspace root). For a HOME install those must be the absolute ~/.kiro/tools
+  # path, or they break from any other workspace. Rewrite the installed copies in place.
+  if [ "$scope" = home ]; then
+    if [ "$DRY" = 1 ]; then say "  [dry-run] rewrite .kiro/tools → $d/tools in installed hooks + steering";
+    else for f in "$d/hooks/"*.kiro.hook "$d/steering/devloop.md"; do
+      [ -f "$f" ] && python3 -c "import sys;p=sys.argv[1];s=open(p).read().replace('.kiro/tools/',sys.argv[2]+'/');open(p,'w').write(s)" "$f" "$d/tools"
+    done; fi
+  fi
   # MCP config is user-owned: only seed our disabled example if none exists (never clobber).
   if [ -f "$d/settings/mcp.json" ]; then
     say "  note: $d/settings/mcp.json exists — see $REPO/kiro/settings/mcp.json for the SharePoint MCP example."
@@ -134,6 +143,11 @@ doctor(){
                    || say "  $(c '1;33' ⚠) $h ($scope) — content present, ingest.py MISSING (reinstall)"
     else
       say "  $(c '1;31' ✗) $h ($scope) — content present but wikikit.py missing/not runnable (reinstall)"
+    fi
+    # A home-scope Kiro install must rewrite hook commands to an absolute tools path; a leftover
+    # workspace-relative `python3 .kiro/tools/…` would break when Kiro runs it from any workspace.
+    if [ "$h" = kiro ] && [ "$scope" = home ] && grep -l 'python3 \.kiro/tools/' "$d/hooks/"*.kiro.hook >/dev/null 2>&1; then
+      say "  $(c '1;33' ⚠) kiro (home) — hook commands are workspace-relative; reinstall to fix the paths"
     fi
   done; done
 }

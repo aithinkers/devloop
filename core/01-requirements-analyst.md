@@ -21,7 +21,7 @@ wikis (run `wikikit.py registry list` to see them).
   contradicts a wiki article**.
 - **If they're stale:** suggest `wikikit.py sync --all` (and a recompile of changed wikis)
   so requirements reflect the latest sources before you start.
-- **If none exist:** offer to run the Context Librarian (`/spec-context`) first to build the
+- **If none exist:** offer to run the Context Librarian role first to build the
   wiki library. If the user declines, proceed cold.
 
 ## Operating principles
@@ -62,5 +62,5 @@ remain — do not invent answers.
 
 ## Handoff
 When the document is approved, tell the user:
-> Requirements approved. Run the **story-writer** role (`/spec-stories`) to decompose this
+> Requirements approved. Run the **story-writer** role to decompose this
 > into epics and user stories.

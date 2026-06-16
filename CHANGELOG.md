@@ -2,6 +2,23 @@
 
 All notable changes to DevLoop are documented here. Versioning is semantic.
 
+## [0.11.2]
+Follow-up Kiro review fixes (home-scope + host-neutral content):
+- **Home-scope hooks now work from any workspace.** `--scope home` installs hooks/steering that
+  referenced workspace-relative `.kiro/tools/…`, which broke outside the project. The installer
+  now rewrites those to the absolute `~/.kiro/tools/…` for home installs (project scope stays
+  workspace-relative). `doctor` warns if a home install still has workspace-relative hooks.
+- **Removed Claude-only `/spec-*` from the shared skill bodies.** The canonical role bodies +
+  `roles.json` summary used `/spec-requirements`, `/spec-jira`, etc. as hand-off cues, which
+  leaked Claude's command names into the Kiro/Codex skills. They now use host-neutral role names
+  (e.g. "Hand off to the Requirements Analyst").
+- **Consistent Kiro invocation docs.** Skills are invoked with `$role` or `/skills` (only the two
+  subagents are `/role`); kiro/README and the root README now say so consistently (the generated
+  steering already did).
+- **tests:** smoke test 46 → 47 — now runs *every* shipped hook command verbatim from the
+  workspace (project scope) and from an unrelated workspace (home scope, absolute paths), instead
+  of just resolving one helper path.
+
 ## [0.11.1]
 Kiro install-path + UX fixes (from review):
 - **Fixed the Kiro hook commands** — they ran `python3 tools/wikikit.py …`, but the helper
