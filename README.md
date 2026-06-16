@@ -40,14 +40,14 @@ from the plugin marketplace:
 
 ```
 /plugin marketplace add aithinkers/devloop
-/plugin install devloop
+/plugin install devloop@devloop-marketplace
 ```
 
 Then just describe a feature and let the chain auto-trigger. To call a phase directly, the
 surface differs by host: **Claude Code** has `/spec-context`, `/spec-requirements`, … commands;
 **Kiro** auto-triggers the role skills (invoke one with `$context-librarian` or via `/skills`;
-the two subagents also run as `/context-librarian` & `/requirements-analyst`); **Codex** invokes
-the role skill (`$context-librarian` or `/skills`).
+the three subagents also run as `/context-librarian`, `/business-analyst` & `/requirements-analyst`);
+**Codex** invokes the role skill (`$context-librarian` or `/skills`).
 
 ## How it works
 
@@ -57,19 +57,19 @@ of **gated** roles — each one finishes (and you sign off) before the next begi
 1. **Context Librarian** — asks where your knowledge lives (docs, meeting minutes, SharePoint,
    wikis, repos, URLs) and **compiles it into a library of LLM-Wikis** you can trust. Run this
    first when you have source material.
-1b. **Business Analyst (BRD)** *(optional)* — for waterfall/regulated/SI teams that need a formal
+2. **Business Analyst (BRD)** *(optional)* — for waterfall/regulated/SI teams that need a formal
    **Business Requirements Document**: business objectives + metrics, scope, stakeholders,
    current/future state, and numbered business requirements (`BR-n`) with sign-off → `brd.md`.
    Agile teams skip this and start at the Requirements Analyst. The later phases trace
    `BR → FR → US` when a BRD exists.
-2. **Requirements Analyst** — reads the wikis (and the BRD if present), then interviews you
+3. **Requirements Analyst** — reads the wikis (and the BRD if present), then interviews you
    Socratically, **one question at a time**, only about the gaps. Produces `requirements.md`
    (numbered FR/NFR, each traced to its source — and to a `BR` when a BRD exists).
-3. **Story Writer** — turns approved requirements into epics + INVEST user stories with Gherkin
+4. **Story Writer** — turns approved requirements into epics + INVEST user stories with Gherkin
    acceptance criteria and a traceability matrix → `stories.md`.
-4. **Story Reviewer** — an independent pass for INVEST, Definition of Ready, coverage, and AC
+5. **Story Reviewer** — an independent pass for INVEST, Definition of Ready, coverage, and AC
    quality → `story-review.md`.
-5. **Jira Organizer** — recommends how to organize Jira and writes a `jira-plan.md`. Guidance +
+6. **Jira Organizer** — recommends how to organize Jira and writes a `jira-plan.md`. Guidance +
    config only — no live Jira changes.
 
 Because the skills auto-trigger, the agent picks the right role for what you're doing.
@@ -134,7 +134,7 @@ Host-specific details below reflect each tool **as of mid-2026** — these are f
 so check the host's current docs if something has changed. Validated live on **Kiro 0.11**; the
 Claude marketplace install and the Codex layout are built to the documented conventions.
 
-- **Claude Code** — skills + thin `/spec-*` commands + `context-librarian`/`requirements-analyst`
+- **Claude Code** — skills + thin `/spec-*` commands + `context-librarian`/`business-analyst`/`requirements-analyst`
   subagents. Installs to `./.claude/` or `~/.claude/`.
 - **Kiro** (0.9+) — skills + subagents + a lean `inclusion: auto` steering orchestrator + manual
   lint/sync **hooks** + a disabled SharePoint **MCP** example (`.kiro/settings/mcp.json`, seeded
