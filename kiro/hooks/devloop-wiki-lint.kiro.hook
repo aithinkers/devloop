@@ -8,6 +8,6 @@
   },
   "then": {
     "type": "runCommand",
-    "command": "python3 tools/wikikit.py lint --all"
+    "command": "python3 .kiro/tools/wikikit.py lint --all"
   }
 }

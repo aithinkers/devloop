@@ -41,26 +41,28 @@ from the plugin marketplace:
 /plugin install devloop
 ```
 
-Then just describe a feature and let the chain run — or call a phase directly with `/spec-context`,
-`/spec-requirements`, `/spec-stories`, `/spec-review`, `/spec-jira`.
+Then just describe a feature and let the chain auto-trigger. To call a phase directly, the
+surface differs by host: **Claude Code** has `/spec-context`, `/spec-requirements`, … commands;
+**Kiro** uses the role skills/subagents (`/context-librarian`, …, or `#devloop` steering);
+**Codex** invokes the role skill (`$context-librarian` or `/skills`).
 
 ## How it works
 
 When you ask to build something, DevLoop *doesn't* jump to stories. It steps back through five
 **gated** roles — each one finishes (and you sign off) before the next begins:
 
-1. **Context Librarian** (`/spec-context`) — asks where your knowledge lives (docs, meeting
-   minutes, SharePoint, wikis, repos, URLs) and **compiles it into a library of LLM-Wikis** you
-   can trust. Run this first when you have source material.
-2. **Requirements Analyst** (`/spec-requirements`) — reads the wikis, then interviews you
-   Socratically, **one question at a time**, only about the gaps. Produces `requirements.md`
-   (numbered FR/NFR, each traced to its source).
-3. **Story Writer** (`/spec-stories`) — turns approved requirements into epics + INVEST user
-   stories with Gherkin acceptance criteria and a traceability matrix → `stories.md`.
-4. **Story Reviewer** (`/spec-review`) — an independent pass for INVEST, Definition of Ready,
-   coverage, and AC quality → `story-review.md`.
-5. **Jira Organizer** (`/spec-jira`) — recommends how to organize Jira and writes a
-   `jira-plan.md`. Guidance + config only — no live Jira changes.
+1. **Context Librarian** — asks where your knowledge lives (docs, meeting minutes, SharePoint,
+   wikis, repos, URLs) and **compiles it into a library of LLM-Wikis** you can trust. Run this
+   first when you have source material.
+2. **Requirements Analyst** — reads the wikis, then interviews you Socratically, **one question
+   at a time**, only about the gaps. Produces `requirements.md` (numbered FR/NFR, each traced to
+   its source).
+3. **Story Writer** — turns approved requirements into epics + INVEST user stories with Gherkin
+   acceptance criteria and a traceability matrix → `stories.md`.
+4. **Story Reviewer** — an independent pass for INVEST, Definition of Ready, coverage, and AC
+   quality → `story-review.md`.
+5. **Jira Organizer** — recommends how to organize Jira and writes a `jira-plan.md`. Guidance +
+   config only — no live Jira changes.
 
 Because the skills auto-trigger, the agent picks the right role for what you're doing.
 
@@ -123,12 +125,12 @@ All three hosts get the **same Agent Skills** (the `skills/` library). Each adds
 ## Testing
 
 ```bash
-bash test/smoke_test.sh    # 44 checks, no LLM, no network
+bash test/smoke_test.sh    # 46 checks, no LLM, no network
 ```
 
 End to end: registry + scaffold, change-detection, the compile step, lint + incremental cache, a
 git-backed wiki, cross-wiki lint, Jira validation, build freshness, single-source skills, and
-all-host install/uninstall. Expect `44 passed, 0 failed`.
+all-host install/uninstall. Expect `46 passed, 0 failed`.
 
 ## How it's built
 

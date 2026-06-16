@@ -112,12 +112,15 @@ def build_kiro(adapter, roles, order, out):
              "phase; the skill carries the full method, so this file only sequences them.\n"]
     for i, rid in enumerate(order):
         r = roles[rid]
-        lines.append(f"{i+1}. **{r['title']}** — adopt the `{rid}` skill (or `/{rid}` subagent). {r['summary']}")
+        # Only context-librarian/requirements-analyst ship as custom subagents; the rest are
+        # skills only (invoke with $name or via /skills) — don't call them subagents.
+        inv = f"or the `/{rid}` subagent" if r.get("subagent") else f"`${rid}` or `/skills`"
+        lines.append(f"{i+1}. **{r['title']}** — adopt the `{rid}` skill ({inv}). {r['summary']}")
     lines += ["",
-              "Helpers live in `tools/` — run them as `python3 tools/wikikit.py …` and",
-              "`python3 tools/ingest.py <folder> --wiki <id>` (or use the DevLoop hooks). DevLoop's",
-              "`requirements.md` is richer than Kiro's native EARS spec (personas, FR/NFR, risks); it",
-              "**feeds** a Kiro feature spec rather than replacing it.\n"]
+              "Helpers are installed at `.kiro/tools/` — run them as `python3 .kiro/tools/wikikit.py …`",
+              "and `python3 .kiro/tools/ingest.py <folder> --wiki <id>` (or use the DevLoop hooks,",
+              "which call the same paths). DevLoop's `requirements.md` is richer than Kiro's native",
+              "EARS spec (personas, FR/NFR, risks); it **feeds** a Kiro feature spec, not replaces it.\n"]
     out[f"kiro/steering/{st['name']}.md"] = ("\n".join(lines)).encode()
     for h in adapter.get("hooks", []):
         hook = {"enabled": True, "name": h["name"], "description": h["description"],

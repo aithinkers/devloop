@@ -15,14 +15,14 @@
       "name": "DevLoop: lint wikis",
       "description": "Validate every DevLoop wiki for broken [[wikilinks]] and orphans, including cross-wiki [[namespace:Concept]] links. Run manually from the Agent Hooks panel.",
       "trigger": "userTriggered",
-      "command": "python3 tools/wikikit.py lint --all"
+      "command": "python3 .kiro/tools/wikikit.py lint --all"
     },
     {
       "file": "devloop-wiki-sync",
       "name": "DevLoop: sync wikis",
       "description": "Clone/pull every git-backed wiki and report which sources changed since the last build (exits non-zero on a git failure). Run manually from the Agent Hooks panel.",
       "trigger": "userTriggered",
-      "command": "python3 tools/wikikit.py sync --all"
+      "command": "python3 .kiro/tools/wikikit.py sync --all"
     }
   ],
   "mcp": {

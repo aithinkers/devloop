@@ -276,6 +276,23 @@ PY
 then ok "MCP example is valid, disabled, secret-free"; else no "MCP example invalid/enabled/leaky"; fi
 cd "$TMP"
 
+echo "[12k] Kiro hook commands resolve + run from the workspace root (install path, not bare tools/)"
+HK="$TMP/kiro-hookrun"; mkdir -p "$HK"
+( cd "$HK" && HOME="$HK" "$HERE/devloop" install --host kiro --scope project >/dev/null 2>&1 )
+hp_ok=1; sp=""
+for h in "$HERE"/kiro/hooks/*.kiro.hook; do
+  cmd=$(python3 -c "import json,sys;print(json.load(open(sys.argv[1]))['then']['command'])" "$h")
+  sp=$(printf '%s' "$cmd" | grep -oE '[^ ]+\.py')      # the script the hook shells out to
+  [ -f "$HK/$sp" ] || { hp_ok=0; echo "    unresolved: $sp (from: $cmd)"; }
+done
+[ "$hp_ok" = 1 ] && ok "every hook's script path resolves at the install location (.kiro/tools)" \
+  || no "hook command path unresolved — would fail when Kiro runs it from the workspace root"
+# run the helper verbatim from the workspace root, exactly as the hook would
+if ( cd "$HK" && python3 "$sp" registry init >/dev/null 2>&1 && [ -f "$HK/devloop.wikis.json" ] ); then
+  ok "hook helper executes verbatim from workspace root (python3 $sp …)"
+else no "hook helper did not execute as shipped from the workspace root"; fi
+cd "$TMP"
+
 echo "[12g] Kiro MCP config is user-owned: install never clobbers an existing mcp.json"
 MT="$TMP/kiro-mcp"; mkdir -p "$MT/.kiro/settings"
 printf '{"mcpServers":{"mine":{"command":"node","args":["x.js"]}}}\n' > "$MT/.kiro/settings/mcp.json"

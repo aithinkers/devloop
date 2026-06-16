@@ -2,6 +2,22 @@
 
 All notable changes to DevLoop are documented here. Versioning is semantic.
 
+## [0.11.1]
+Kiro install-path + UX fixes (from review):
+- **Fixed the Kiro hook commands** — they ran `python3 tools/wikikit.py …`, but the helper
+  installs to `.kiro/tools/`. Kiro executes a hook's shell command from the workspace root, so
+  the command failed as shipped. Now `python3 .kiro/tools/wikikit.py …` (and the steering helper
+  hint matches).
+- **Steering no longer mislabels every role a "subagent."** Only `context-librarian` and
+  `requirements-analyst` ship as custom subagents; the other three are skills (invoke `$role`
+  or via `/skills`). The generated `steering/devloop.md` now says so per role.
+- **README direct-invocation is host-specific** — `/spec-*` are Claude commands; Kiro uses
+  `/<role>` skills/subagents (or `#devloop`), Codex uses `$role` / `/skills`. The "How it works"
+  list is now host-neutral.
+- **tests:** smoke test 44 → 46 — installs Kiro and executes each hook's command string verbatim
+  from the workspace root (resolves at `.kiro/tools` and actually runs). This is the check that
+  was missing, which let the path bug pass before.
+
 ## [0.11.0]
 Collapsed to **one canonical skills library** (Superpowers-style), now that all three hosts read
 the agentskills.io Agent Skill format. Previously the build generated three byte-identical skill
