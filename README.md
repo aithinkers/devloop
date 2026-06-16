@@ -172,13 +172,15 @@ curl -fsSL .../install.sh | sh -s -- --host claude --scope home
 ### What lands where
 
 - **Claude Code** — `skills/` (auto-triggering), `commands/` (slash commands), the
-  `context-librarian`/`requirements-analyst` subagents, and `tools/wikikit.py`. Project scope
-  → `./.claude/`, home scope → `~/.claude/`.
+  `context-librarian`/`requirements-analyst` subagents, and the helper tools
+  (`tools/wikikit.py` + `tools/ingest.py`). Project scope → `./.claude/`, home scope →
+  `~/.claude/`. (Every host gets both helpers in its `tools/`.)
 - **Kiro** — `steering/devloop-requirements-to-stories.md` + spec templates in
   `specs/_template/`. Project scope → `./.kiro/`, home scope → `~/.kiro/`. Reference it with
   `#devloop-requirements-to-stories`.
-- **Codex** — `ba-*.md` prompts (each becomes a `/` command) into `$CODEX_HOME/prompts`
-  (Codex only reads prompts from there); project scope also drops `AGENTS.md` into the repo.
+- **Codex** — `spec-*.md` prompts (each becomes a `/` command) into `$CODEX_HOME/prompts`
+  (Codex only reads prompts from there) plus the helper tools in `$CODEX_HOME/tools`; project
+  scope also drops `AGENTS.md` into the repo.
 
 ## Usage
 
@@ -228,7 +230,7 @@ freshness** check (the generated platform folders match `core/`), **cross-host i
 (every `shared/<file>` a role body cites is inlined into the prompt).
 Expect `22 passed, 0 failed` (one stage self-skips if `git` isn't installed).
 
-**Manual single-wiki test in your tool.** Install (`./install.sh claude`), then in a scratch
+**Manual single-wiki test in your tool.** Install (`./devloop install --host claude`), then in a scratch
 project: `wikikit.py registry init`, edit `devloop.wikis.json` down to one local wiki
 pointing at `examples/integrations-src/` (or your own docs), copy those files into
 `knowledge/raw/`, and run `/spec-context` — the agent should produce `knowledge/wiki/concepts/`
@@ -247,14 +249,15 @@ from **tool-specific arrangement**, and a generic engine arranges one into the o
 
 - **Common source (edit these):** `core/roles.json` (neutral role definitions — id, title,
   body, command, description, summary), `core/*.md` (role bodies), `core/shared/*`
-  (templates/guides/examples), and `tools/wikikit.py` (one copy).
+  (templates/guides/examples), and the helper scripts `tools/*.py` (`wikikit.py` +
+  `ingest.py`, one copy each).
 - **Per-tool adapter (edit these):** each tool folder owns an `adapter.json` describing
   *only* its arrangement — which shared files a Claude skill bundles, which files Codex
   inlines into each prompt, the Kiro template-name mapping. `kind` selects the builder.
 - **Authored, tool-specific (edit these):** `claude-code/.claude-plugin/plugin.json`,
   `.claude-plugin/marketplace.json`, `kiro/steering/*`, `kiro/README.md`, `codex/AGENTS.md`.
 - **Generated (never edit by hand):** `claude-code/skills|commands|agents`, `codex/prompts`,
-  `kiro/specs/_template`, and the per-tool copies of `wikikit.py`.
+  `kiro/specs/_template`, and the per-tool copies of `tools/*.py` (`wikikit.py` + `ingest.py`).
 
 ```bash
 ./build.sh          # read core/roles.json + each <tool>/adapter.json → generate the packages
@@ -277,9 +280,9 @@ devloop/
 │   ├── roles.json              # ← SOURCE: neutral role definitions (common)
 │   ├── 0X-*.md                 # ← SOURCE: role bodies
 │   └── shared/                 # ← SOURCE: templates, guides, example configs
-├── tools/wikikit.py            # ← SOURCE: deterministic helper (registry/sync/jira/lint)
+├── tools/                      # ← SOURCE: deterministic helpers — wikikit.py (registry/sync/jira/lint) + ingest.py (multi-format extract)
 ├── examples/                   # sample sources for trying a single wiki
-├── test/smoke_test.sh          # 18-check smoke test (incl. build freshness)
+├── test/smoke_test.sh          # 22-check smoke test (incl. build freshness + host parity)
 ├── claude-code/  adapter.json + .claude-plugin/plugin.json (authored) → skills/commands/agents (generated)
 ├── kiro/         adapter.json + steering/ + README (authored)         → specs/_template/ (generated)
 ├── codex/        adapter.json + AGENTS.md (authored)                  → prompts/ (generated)
