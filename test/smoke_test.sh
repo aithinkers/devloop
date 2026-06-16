@@ -341,6 +341,24 @@ done
   || no "spaced-HOME hook command is not shell-safe (unquoted path)"
 cd "$TMP"
 
+echo "[12n] install itself is metacharacter-safe (paths with a space AND an apostrophe)"
+PQ="$TMP/pro j'q"; mkdir -p "$PQ"   # project dir with space + apostrophe
+( cd "$PQ" && HOME="$PQ" CODEX_HOME="$PQ/.codex" "$HERE/devloop" install --host all --scope project >/dev/null 2>&1 )
+{ [ -f "$PQ/.claude/skills/context-librarian/SKILL.md" ] \
+  && [ -f "$PQ/.agents/skills/story-writer/SKILL.md" ] \
+  && [ -f "$PQ/.kiro/skills/jira-organizer/SKILL.md" ]; } \
+  && ok "project-scope install works for a path with space + apostrophe (no eval)" \
+  || no "install broke on a space/apostrophe project path"
+HQ="$TMP/ho me'q"; mkdir -p "$HQ"   # HOME with space + apostrophe
+HOME="$HQ" CODEX_HOME="$HQ/.codex" "$HERE/devloop" install --host all --scope home >/dev/null 2>&1
+{ [ -f "$HQ/.kiro/skills/context-librarian/SKILL.md" ] && [ -f "$HQ/.kiro/hooks/devloop-wiki-lint.kiro.hook" ]; } \
+  && ok "home-scope install works for a HOME with space + apostrophe" || no "install broke on a space/apostrophe HOME"
+WS4="$TMP/ws4"; mkdir -p "$WS4"; _devloop_local_registry "$WS4" "$HQ/.kiro/tools/wikikit.py"
+cmd=$(_hook_cmd "$HQ/.kiro/hooks/devloop-wiki-lint.kiro.hook")
+( cd "$WS4" && eval "$cmd" >/dev/null 2>&1 ) \
+  && ok "home hook runs from another workspace with a space+apostrophe HOME" || no "home hook broke on space/apostrophe HOME"
+cd "$TMP"
+
 echo "[12g] Kiro MCP config is user-owned: install never clobbers an existing mcp.json"
 MT="$TMP/kiro-mcp"; mkdir -p "$MT/.kiro/settings"
 printf '{"mcpServers":{"mine":{"command":"node","args":["x.js"]}}}\n' > "$MT/.kiro/settings/mcp.json"

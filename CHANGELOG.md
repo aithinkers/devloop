@@ -2,6 +2,18 @@
 
 All notable changes to DevLoop are documented here. Versioning is semantic.
 
+## [0.11.4]
+Make the whole CLI safe for install paths with shell metacharacters (review follow-up):
+- The `run` helper built shell-command strings with embedded single-quoted paths and executed
+  them via `eval`, so any path containing a `'` (apostrophe in a username/workspace) broke the
+  install with `unexpected EOF while looking for matching ''`. `run` now executes a real
+  **argument vector** (`"$@"`, no `eval`); every installer/uninstaller passes paths as separate
+  arguments (globs expand in the caller). Dry-run prints a shell-quoted preview via `printf %q`.
+- Verified installs into `/tmp/pro j'q` (project) and a `HOME` of `…/ho me'q` (home, all hosts),
+  and that a home Kiro hook still runs from an unrelated workspace under such a path.
+- **tests:** smoke test 49 → 52 — install all hosts into both a project path and a `HOME` path
+  containing a space *and* an apostrophe.
+
 ## [0.11.3]
 Make home-scope Kiro hooks shell-safe for paths with spaces (review follow-up):
 - The home-scope rewrite wrote the absolute tools path into the hook command **unquoted**, so a

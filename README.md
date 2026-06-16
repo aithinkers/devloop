@@ -126,12 +126,12 @@ All three hosts get the **same Agent Skills** (the `skills/` library). Each adds
 ## Testing
 
 ```bash
-bash test/smoke_test.sh    # 49 checks, no LLM, no network
+bash test/smoke_test.sh    # 52 checks, no LLM, no network
 ```
 
 End to end: registry + scaffold, change-detection, the compile step, lint + incremental cache, a
 git-backed wiki, cross-wiki lint, Jira validation, build freshness, single-source skills, and
-all-host install/uninstall. Expect `49 passed, 0 failed`.
+all-host install/uninstall. Expect `52 passed, 0 failed`.
 
 ## How it's built
 

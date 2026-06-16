@@ -19,7 +19,9 @@ DRY=0
 
 c()  { printf '\033[%sm%s\033[0m' "$1" "$2"; }      # color
 say(){ printf '%s\n' "$*"; }
-run(){ if [ "$DRY" = 1 ]; then say "  [dry-run] $*"; else eval "$*"; fi; }
+# Run a command as a real argument vector (never re-parsed by a shell), so paths with spaces,
+# quotes, or other metacharacters are safe. Dry-run prints a shell-quoted preview.
+run(){ if [ "$DRY" = 1 ]; then printf '  [dry-run]'; printf ' %q' "$@"; printf '\n'; else "$@"; fi; }
 
 # ---- scope → destination roots -------------------------------------------------
 claude_dir(){ [ "$1" = home ] && echo "$HOME/.claude" || echo "$PWD/.claude"; }
@@ -32,22 +34,22 @@ codex_skills_dir(){ [ "$1" = home ] && echo "$HOME/.agents/skills" || echo "$PWD
 # ---- per-host install ----------------------------------------------------------
 install_claude(){ local scope="$1" d; d="$(claude_dir "$scope")"
   say "$(c '1;36' "Claude Code") → $d  (skills, commands, agents, tools)"
-  run "mkdir -p '$d/skills' '$d/commands' '$d/agents' '$d/tools'"
-  run "cp -R '$REPO/skills/.'               '$d/skills/'"
-  run "cp -R '$REPO/commands/.'             '$d/commands/'"
-  run "cp -R '$REPO/agents/.'               '$d/agents/'"
-  run "cp    '$REPO/tools/'*.py             '$d/tools/'"
-  run "chmod +x '$d/tools/'*.py"
+  run mkdir -p "$d/skills" "$d/commands" "$d/agents" "$d/tools"
+  run cp -R "$REPO/skills/."   "$d/skills/"
+  run cp -R "$REPO/commands/." "$d/commands/"
+  run cp -R "$REPO/agents/."   "$d/agents/"
+  run cp    "$REPO"/tools/*.py "$d/tools/"
+  run chmod +x "$d"/tools/*.py
 }
 install_kiro(){ local scope="$1" d; d="$(kiro_dir "$scope")"
   say "$(c '1;36' "Kiro") → $d  (skills, agents, steering, hooks, tools, MCP example)"
-  run "mkdir -p '$d/skills' '$d/agents' '$d/steering' '$d/hooks' '$d/tools'"
-  run "cp -R '$REPO/skills/.'               '$d/skills/'"
-  run "cp '$REPO/kiro/agents/'*.md          '$d/agents/'"
-  run "cp '$REPO/kiro/steering/'*.md        '$d/steering/'"
-  run "cp '$REPO/kiro/hooks/'*.kiro.hook    '$d/hooks/'"
-  run "cp '$REPO/tools/'*.py                '$d/tools/'"
-  run "chmod +x '$d/tools/'*.py"
+  run mkdir -p "$d/skills" "$d/agents" "$d/steering" "$d/hooks" "$d/tools"
+  run cp -R "$REPO/skills/."          "$d/skills/"
+  run cp "$REPO"/kiro/agents/*.md     "$d/agents/"
+  run cp "$REPO"/kiro/steering/*.md   "$d/steering/"
+  run cp "$REPO"/kiro/hooks/*.kiro.hook "$d/hooks/"
+  run cp "$REPO"/tools/*.py           "$d/tools/"
+  run chmod +x "$d"/tools/*.py
   # Hooks/steering reference `.kiro/tools/…` — correct for a project install (Kiro runs hook
   # commands from the workspace root). For a HOME install those must be the absolute ~/.kiro/tools
   # path (shell-quoted, since $HOME may contain spaces), or they break from any other workspace.
@@ -71,46 +73,47 @@ open(p, 'w').write(out)
   if [ -f "$d/settings/mcp.json" ]; then
     say "  note: $d/settings/mcp.json exists — see $REPO/kiro/settings/mcp.json for the SharePoint MCP example."
   else
-    run "mkdir -p '$d/settings'"
-    run "cp '$REPO/kiro/settings/mcp.json'  '$d/settings/'"
+    run mkdir -p "$d/settings"
+    run cp "$REPO/kiro/settings/mcp.json" "$d/settings/"
   fi
 }
 install_codex(){ local scope="$1" h sk agents_dest; h="$(codex_home)"; sk="$(codex_skills_dir "$scope")"
   say "$(c '1;36' "Codex") → $sk  (Agent Skills) + $h/tools"
-  run "mkdir -p '$sk' '$h/tools'"
-  run "cp -R '$REPO/skills/.'               '$sk/'"
-  run "cp '$REPO/tools/'*.py                '$h/tools/'"
-  run "chmod +x '$h/tools/'*.py"
+  run mkdir -p "$sk" "$h/tools"
+  run cp -R "$REPO/skills/." "$sk/"
+  run cp "$REPO"/tools/*.py "$h/tools/"
+  run chmod +x "$h"/tools/*.py
   # AGENTS.md orchestrator (user-owned): home → $CODEX_HOME, project → $PWD; only if absent.
   [ "$scope" = home ] && agents_dest="$h/AGENTS.md" || agents_dest="$PWD/AGENTS.md"
   if [ -e "$agents_dest" ]; then
     say "  note: $agents_dest exists — review $REPO/codex/AGENTS.md and merge."
   else
-    run "cp '$REPO/codex/AGENTS.md'          '$agents_dest'"
+    run cp "$REPO/codex/AGENTS.md" "$agents_dest"
   fi
 }
 
 # ---- per-host uninstall (only our files) --------------------------------------
 uninstall_claude(){ local d; d="$(claude_dir "$1")"
   say "$(c '1;36' Claude) ✗ $d"
-  for s in "$REPO"/skills/*/; do run "rm -rf '$d/skills/$(basename "$s")'"; done
-  for f in "$REPO"/commands/*.md; do run "rm -f '$d/commands/$(basename "$f")'"; done
-  for f in "$REPO"/agents/*.md;   do run "rm -f '$d/agents/$(basename "$f")'"; done
-  for f in "$REPO"/tools/*.py; do run "rm -f '$d/tools/$(basename "$f")'"; done
+  for s in "$REPO"/skills/*/; do run rm -rf "$d/skills/$(basename "$s")"; done
+  for f in "$REPO"/commands/*.md; do run rm -f "$d/commands/$(basename "$f")"; done
+  for f in "$REPO"/agents/*.md;   do run rm -f "$d/agents/$(basename "$f")"; done
+  for f in "$REPO"/tools/*.py; do run rm -f "$d/tools/$(basename "$f")"; done
 }
 uninstall_kiro(){ local d; d="$(kiro_dir "$1")"
   say "$(c '1;36' Kiro) ✗ $d"
-  for s in "$REPO"/skills/*/;           do run "rm -rf '$d/skills/$(basename "$s")'"; done
-  for f in "$REPO"/kiro/agents/*.md;    do run "rm -f '$d/agents/$(basename "$f")'"; done
-  for f in "$REPO"/kiro/steering/*.md;  do run "rm -f '$d/steering/$(basename "$f")'"; done
-  for f in "$REPO"/kiro/hooks/*.kiro.hook; do run "rm -f '$d/hooks/$(basename "$f")'"; done
-  for f in "$REPO"/tools/*.py;          do run "rm -f '$d/tools/$(basename "$f")'"; done
+  for s in "$REPO"/skills/*/;           do run rm -rf "$d/skills/$(basename "$s")"; done
+  for f in "$REPO"/kiro/agents/*.md;    do run rm -f "$d/agents/$(basename "$f")"; done
+  for f in "$REPO"/kiro/steering/*.md;  do run rm -f "$d/steering/$(basename "$f")"; done
+  for f in "$REPO"/kiro/hooks/*.kiro.hook; do run rm -f "$d/hooks/$(basename "$f")"; done
+  for f in "$REPO"/tools/*.py;          do run rm -f "$d/tools/$(basename "$f")"; done
 }
 uninstall_codex(){ local scope="$1" h sk; h="$(codex_home)"; sk="$(codex_skills_dir "$scope")"
   say "$(c '1;36' Codex) ✗ $sk"
-  for s in "$REPO"/skills/*/; do run "rm -rf '$sk/$(basename "$s")'"; done
-  for f in "$REPO"/tools/*.py; do run "rm -f '$h/tools/$(basename "$f")'"; done
-  run "rm -f '$h/prompts/'spec-context.md '$h/prompts/'spec-requirements.md '$h/prompts/'spec-stories.md '$h/prompts/'spec-review.md '$h/prompts/'spec-jira.md"  # legacy deprecated prompts
+  for s in "$REPO"/skills/*/; do run rm -rf "$sk/$(basename "$s")"; done
+  for f in "$REPO"/tools/*.py; do run rm -f "$h/tools/$(basename "$f")"; done
+  # legacy deprecated prompts from pre-0.10 installs
+  run rm -f "$h/prompts/spec-context.md" "$h/prompts/spec-requirements.md" "$h/prompts/spec-stories.md" "$h/prompts/spec-review.md" "$h/prompts/spec-jira.md"
 }
 
 # ---- list ----------------------------------------------------------------------
