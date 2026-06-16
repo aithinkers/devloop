@@ -43,3 +43,44 @@ concept + source. Link shared concepts with a namespace: `[[integrations:SSO]]`,
 **Refresh later:** `wikikit.py sync --all` (git pull + report changed files), then `lint --all`.
 Use `contains: "sources"` instead of `"wiki"` if a shared repo holds raw docs you want compiled
 per project rather than a pre-built wiki.
+
+# Example: a wiki for a code repo (stored in the repo, referenced elsewhere)
+
+Distill an existing code repository into a `codebase` wiki, commit it **inside that repo**, and
+let other projects use the distilled knowledge (services, APIs, data models, config, deps)
+instead of reading the source. The `app-codebase` entry in `devloop.wikis.shared.example.json`
+shows the consumer side.
+
+**1. In the code repo — generate the wiki once and commit it:**
+
+```bash
+# from inside the code repo
+python3 /path/to/wikikit.py registry init               # minimal registry: one codebase wiki, source local "."
+python3 /path/to/wikikit.py scaffold --wiki app-codebase
+#  ... run /spec-context — the Context Librarian walks the tree and DESCRIBES it (services,
+#      api/endpoint, data model, config, dependency); it does not paste code ...
+python3 /path/to/wikikit.py lint   --wiki app-codebase
+python3 /path/to/wikikit.py commit --wiki app-codebase  # records .wiki-state.json for incremental refresh
+git add knowledge/ && git commit -m "Add DevLoop codebase wiki"   # the wiki ships WITH the code
+```
+
+**2. In your current project — reference it (clone & use the knowledge, not the code):**
+
+```bash
+# add the app-codebase entry from devloop.wikis.shared.example.json to your devloop.wikis.json
+python3 /path/to/wikikit.py sync --all     # clones the repo into .devloop/wikis/app-codebase/
+python3 /path/to/wikikit.py lint --all     # checks [[app-codebase:…]] links resolve
+```
+
+`/spec-requirements` and `/spec-stories` then read the compiled wiki and link with
+`[[app-codebase:AuthService]]`; the Jira Organizer derives **Components** from its services/modules.
+
+**Refresh:** when the code changes, the repo owners re-run `/spec-context` (only changed files
+recompile, via the SHA cache), `commit`, and push; consumers `sync --all`.
+
+Notes: `sync` shallow-clones the whole repo, so the code files land on disk — but the agent only
+reads `knowledge/wiki/`, so its effort is the distilled wiki, not the source. For a code-free
+artifact, publish just the compiled `knowledge/wiki/` to a separate lightweight wiki repo and
+point `url` there. Each article records its **key files**, so the agent can open a specific file
+for ground truth when needed. Prefer `contains: "sources"` if you'd rather compile the code
+per-project than ship a pre-built wiki.

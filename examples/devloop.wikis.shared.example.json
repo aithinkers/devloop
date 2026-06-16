@@ -1,5 +1,5 @@
 {
-  "_note": "Reuse shared company wikis across projects. Build the devops/integrations wikis ONCE in their own git repos (commit the compiled knowledge/wiki/), then drop this registry into any project and `wikikit.py sync --all`. `contains: \"wiki\"` = already compiled, reference only (no recompile); use `contains: \"sources\"` instead if the repo holds raw docs you want compiled per project. Cross-link shared concepts as [[devops:Release Pipeline]] / [[integrations:SSO]]; `wikikit.py lint --all` checks they resolve.",
+  "_note": "Reuse shared company wikis across projects. Build the devops/integrations/codebase wikis ONCE in their own git repos (commit the compiled knowledge/wiki/), then drop this registry into any project and `wikikit.py sync --all`. `contains: \"wiki\"` = already compiled, reference only (no recompile); use `contains: \"sources\"` instead if the repo holds raw docs/code you want compiled per project. Cross-link shared concepts as [[devops:Release Pipeline]] / [[integrations:SSO]] / [[app-codebase:AuthService]]; `wikikit.py lint --all` checks they resolve. Jira Components are derived from the codebase/integrations wikis.",
   "version": 1,
   "cache_dir": ".devloop/wikis",
   "wikis": [
@@ -15,6 +15,11 @@
     { "id": "integrations", "kind": "integrations",
       "source": { "type": "git", "url": "git@github.com:acme/integrations-wiki.git",
                   "ref": "main", "contains": "wiki" },
-      "wiki_path": ".devloop/wikis/integrations/knowledge/wiki" }
+      "wiki_path": ".devloop/wikis/integrations/knowledge/wiki" },
+
+    { "id": "app-codebase", "kind": "codebase",
+      "source": { "type": "git", "url": "git@github.com:acme/app.git",
+                  "ref": "main", "contains": "wiki" },
+      "wiki_path": ".devloop/wikis/app-codebase/knowledge/wiki" }
   ]
 }

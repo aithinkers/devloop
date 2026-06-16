@@ -92,11 +92,13 @@ subfolder, extracting text from markdown, `.docx/.pptx/.xlsx`, `.drawio`, `.vsdx
 PDFs (scanned files/images are flagged for the agent to read with vision). SharePoint comes in
 via an MCP connector (see the per-host notes) or synced files.
 
-**Reuse shared wikis across projects.** Build company-wide `devops`/`integrations` wikis **once**
+**Reuse shared wikis across projects.** Build company-wide `devops`/`integrations` wikis — or a
+**`codebase` wiki that distills an existing code repo** (services, APIs, data models) — **once**
 in their own git repos, then reference them from any project: list them in `devloop.wikis.json`
 with `contains: "wiki"` (already compiled) and `wikikit.py sync --all` clones them into
 `.devloop/wikis/`. `/spec-requirements` pulls them in automatically and you link across with
-`[[devops:Release Pipeline]]`. Ready-to-edit registry + recipe:
+`[[devops:Release Pipeline]]` or `[[app-codebase:AuthService]]` — so a project uses the distilled
+knowledge instead of reading the whole source tree. Ready-to-edit registry + recipe:
 [examples/devloop.wikis.shared.example.json](examples/devloop.wikis.shared.example.json) and
 [examples/README.md](examples/README.md).
 
