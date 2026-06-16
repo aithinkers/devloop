@@ -24,9 +24,10 @@ run(){ if [ "$DRY" = 1 ]; then say "  [dry-run] $*"; else eval "$*"; fi; }
 # ---- scope → destination roots -------------------------------------------------
 claude_dir(){ [ "$1" = home ] && echo "$HOME/.claude" || echo "$PWD/.claude"; }
 kiro_dir(){   [ "$1" = home ] && echo "$HOME/.kiro"   || echo "$PWD/.kiro"; }
-# Codex only reads prompts from $CODEX_HOME (defaults to ~/.codex) regardless of scope;
-# project scope additionally drops AGENTS.md into the current folder.
+# Codex Agent Skills live under .agents/skills (home: $HOME, project: $PWD); helper tools and
+# config.toml live in $CODEX_HOME (defaults to ~/.codex). AGENTS.md is the chain orchestrator.
 codex_home(){ echo "${CODEX_HOME:-$HOME/.codex}"; }
+codex_skills_dir(){ [ "$1" = home ] && echo "$HOME/.agents/skills" || echo "$PWD/.agents/skills"; }
 
 # ---- per-host install ----------------------------------------------------------
 install_claude(){ local scope="$1" d; d="$(claude_dir "$scope")"
@@ -55,18 +56,18 @@ install_kiro(){ local scope="$1" d; d="$(kiro_dir "$scope")"
     run "cp '$REPO/kiro/settings/mcp.json'  '$d/settings/'"
   fi
 }
-install_codex(){ local scope="$1" h; h="$(codex_home)"
-  say "$(c '1;36' "Codex") → $h/prompts  (slash commands, tools)"
-  run "mkdir -p '$h/prompts' '$h/tools'"
-  run "cp '$REPO/codex/prompts/'*.md        '$h/prompts/'"
+install_codex(){ local scope="$1" h sk agents_dest; h="$(codex_home)"; sk="$(codex_skills_dir "$scope")"
+  say "$(c '1;36' "Codex") → $sk  (Agent Skills) + $h/tools"
+  run "mkdir -p '$sk' '$h/tools'"
+  run "cp -R '$REPO/codex/skills/.'         '$sk/'"
   run "cp '$REPO/tools/'*.py                '$h/tools/'"
   run "chmod +x '$h/tools/'*.py"
-  if [ "$scope" = project ]; then
-    if [ -e "$PWD/AGENTS.md" ]; then
-      say "  note: $PWD/AGENTS.md exists — review $REPO/codex/AGENTS.md and merge."
-    else
-      run "cp '$REPO/codex/AGENTS.md' '$PWD/AGENTS.md'"
-    fi
+  # AGENTS.md orchestrator (user-owned): home → $CODEX_HOME, project → $PWD; only if absent.
+  [ "$scope" = home ] && agents_dest="$h/AGENTS.md" || agents_dest="$PWD/AGENTS.md"
+  if [ -e "$agents_dest" ]; then
+    say "  note: $agents_dest exists — review $REPO/codex/AGENTS.md and merge."
+  else
+    run "cp '$REPO/codex/AGENTS.md'          '$agents_dest'"
   fi
 }
 
@@ -86,10 +87,11 @@ uninstall_kiro(){ local d; d="$(kiro_dir "$1")"
   for f in "$REPO"/kiro/hooks/*.kiro.hook; do run "rm -f '$d/hooks/$(basename "$f")'"; done
   for f in "$REPO"/tools/*.py;          do run "rm -f '$d/tools/$(basename "$f")'"; done
 }
-uninstall_codex(){ local h; h="$(codex_home)"
-  say "$(c '1;36' Codex) ✗ $h/prompts"
-  for f in "$REPO"/codex/prompts/*.md; do run "rm -f '$h/prompts/$(basename "$f")'"; done
+uninstall_codex(){ local scope="$1" h sk; h="$(codex_home)"; sk="$(codex_skills_dir "$scope")"
+  say "$(c '1;36' Codex) ✗ $sk"
+  for s in "$REPO"/codex/skills/*/; do run "rm -rf '$sk/$(basename "$s")'"; done
   for f in "$REPO"/tools/*.py; do run "rm -f '$h/tools/$(basename "$f")'"; done
+  run "rm -f '$h/prompts/'spec-context.md '$h/prompts/'spec-requirements.md '$h/prompts/'spec-stories.md '$h/prompts/'spec-review.md '$h/prompts/'spec-jira.md"  # legacy deprecated prompts
 }
 
 # ---- list ----------------------------------------------------------------------
@@ -104,8 +106,8 @@ list_host(){ case "$1" in
     printf '  %s steering #%s\n' "$(present "$d/steering/devloop.md")" "devloop"
     for f in "$REPO"/kiro/hooks/*.kiro.hook; do printf '  %s hook  %s\n' "$(present "$d/hooks/$(basename "$f")")" "$(basename "$f" .kiro.hook)"; done
     printf '  %s settings/mcp.json (MCP example)\n' "$(present "$d/settings/mcp.json")" ;;
-  codex) local h; h="$(codex_home)"; say "Codex ($h/prompts)";
-    for f in "$REPO"/codex/prompts/*.md; do printf '  %s /%s\n' "$(present "$h/prompts/$(basename "$f")")" "$(basename "$f" .md)"; done ;;
+  codex) local h sk; h="$(codex_home)"; sk="$(codex_skills_dir "$2")"; say "Codex ($2: skills $sk, tools $h/tools)";
+    for s in "$REPO"/codex/skills/*/; do printf '  %s skill %s\n' "$(present "$sk/$(basename "$s")")" "$(basename "$s")"; done ;;
 esac; }
 
 # ---- doctor --------------------------------------------------------------------
@@ -123,7 +125,7 @@ doctor(){
     case "$h" in
       claude) d="$(claude_dir "$scope")"; marker="$d/skills/context-librarian/SKILL.md"; wk="$d/tools/wikikit.py";;
       kiro)   d="$(kiro_dir "$scope")";   marker="$d/skills/context-librarian/SKILL.md"; wk="$d/tools/wikikit.py";;
-      codex)  d="$(codex_home)";          marker="$d/prompts/spec-context.md"; wk="$d/tools/wikikit.py";;
+      codex)  marker="$(codex_skills_dir "$scope")/context-librarian/SKILL.md"; wk="$(codex_home)/tools/wikikit.py";;
     esac
     [ -f "$marker" ] || continue   # not installed for this host/scope — stay quiet
     ig="$(dirname "$wk")/ingest.py"

@@ -365,27 +365,23 @@ python3 "$HERE/tools/ingest.py" src --wiki project >/dev/null
   || no "--wiki path did not land raw/ via registry"
 cd "$TMP"
 
-echo "[14] codex prompts are self-contained: every shared/<file> a role body cites is inlined"
-if REPO="$HERE" python3 - <<'PY'
-import json, os, re, sys
-repo = os.environ["REPO"]
-roles = {r["id"]: r for r in json.load(open(f"{repo}/core/roles.json"))["roles"]}
-adapter = json.load(open(f"{repo}/codex/adapter.json"))
-gaps = []
-for rid, r in roles.items():
-    cmd = r["command"]
-    spec = adapter["prompts"].get(cmd)
-    if spec is None:
-        continue
-    body = open(f"{repo}/core/{r['body']}").read()
-    cited = set(re.findall(r'shared/([A-Za-z0-9._-]+)', body))
-    inlined = set(spec.get("includes", []))
-    for f in sorted(cited - inlined):
-        gaps.append(f"{cmd}:{f}")
-if gaps:
-    print(" ".join(gaps)); sys.exit(1)
-PY
-then ok "no codex prompt cites an un-inlined shared/ file"; else no "codex un-inlined shared refs (see above)"; fi
+echo "[14] Codex migrated to Agent Skills: skills present, byte-identical to Claude, no deprecated prompts"
+CX="$TMP/codex"; mkdir -p "$CX"
+HOME="$CX" CODEX_HOME="$CX/.codex" "$HERE/devloop" install --host codex --scope home >/dev/null
+sd="$CX/.agents/skills"
+cx_ok=1; diffs=0
+for s in "$HERE"/codex/skills/*/SKILL.md; do id="$(basename "$(dirname "$s")")"
+  [ -f "$sd/$id/SKILL.md" ] && grep -q "^name: $id$" "$sd/$id/SKILL.md" || cx_ok=0
+  cmp -s "$s" "$HERE/claude-code/skills/$id/SKILL.md" || diffs=$((diffs+1))
+done
+[ "$cx_ok" = 1 ] && ok "Codex installs Agent Skills to .agents/skills with valid frontmatter" || no "Codex skills missing/invalid"
+[ "$diffs" = 0 ] && ok "Codex & Claude skill bodies byte-identical (single source)" || no "$diffs Codex skill body mismatch(es)"
+# AGENTS.md orchestrator landed (home → $CODEX_HOME) and points at skills, not deprecated prompts
+{ [ -f "$CX/.codex/AGENTS.md" ] && grep -q 'context-librarian` skill' "$CX/.codex/AGENTS.md" \
+  && ! grep -q '/spec-context' "$CX/.codex/AGENTS.md"; } \
+  && ok "AGENTS.md orchestrator points at skills (no deprecated /spec-* prompts)" || no "AGENTS.md not migrated"
+# The repo no longer ships generated codex prompts
+[ ! -e "$HERE/codex/prompts" ] && ok "deprecated codex/prompts removed from the package" || no "codex/prompts still present"
 cd "$TMP"
 
 echo

@@ -28,7 +28,7 @@ PLUGIN_JSON = os.path.join(REPO, "claude-code", ".claude-plugin", "plugin.json")
 # Everything under these prefixes is owned by the generator (cleaned + rewritten).
 GEN_PREFIXES = [
     "claude-code/skills/", "claude-code/commands/", "claude-code/agents/",
-    "codex/prompts/", "codex/tools/",
+    "codex/skills/", "codex/tools/",
     "kiro/skills/", "kiro/agents/", "kiro/steering/", "kiro/hooks/", "kiro/settings/", "kiro/tools/",
 ]
 
@@ -94,20 +94,14 @@ def _tools_into(tooldir, adapter, tools, out):
         out[f"{tooldir}/{d}/{name}" if d else f"{tooldir}/{name}"] = data
 
 def build_codex(tooldir, adapter, roles, order, tools, out):
-    titles = adapter.get("titles", {})
+    """Current Codex packaging: Agent Skills (custom prompts are deprecated). One skill per
+    role — identical packages to Claude/Kiro via emit_skill. AGENTS.md (authored) is the lean
+    gated-chain orchestrator that points at these skills."""
     for rid in order:
-        r = roles[rid]
-        spec = adapter["prompts"].get(r["command"])
-        if spec is None:
+        cfg = adapter["roles"].get(rid)
+        if cfg is None:
             continue
-        buf = bytearray(rd(os.path.join(CORE, r["body"])))
-        for inc in spec.get("includes", []):
-            title = titles.get(inc, inc)
-            body = shared(inc).decode()
-            if inc.endswith(".json"):
-                body = "```json\n" + body.rstrip("\n") + "\n```"
-            buf += f"\n---\n## {title}\n\n{body}\n".encode()
-        out[f"{tooldir}/prompts/{r['command']}.md"] = bytes(buf)
+        emit_skill(tooldir, rid, roles[rid], cfg, tools, out)
     _tools_into(tooldir, adapter, tools, out)
 
 def build_kiro(tooldir, adapter, roles, order, tools, out):

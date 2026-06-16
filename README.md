@@ -100,7 +100,7 @@ managing the registry, syncing git-backed wikis, change detection, and link-lint
 
 > **How the helpers run.** `wikikit.py`/`ingest.py` are not put on your `PATH`. During normal
 > use the **host agent runs them for you** from where the installer placed them
-> (`~/.claude/tools/`, `~/.kiro/tools/`, `$CODEX_HOME/tools/` — the skills/prompts carry the
+> (`~/.claude/tools/`, `~/.kiro/tools/`, `$CODEX_HOME/tools/` — the skills carry the
 > path). To run them yourself, either invoke the installed copy
 > (`python3 ~/.claude/tools/wikikit.py …`) or, from a clone of this repo, `python3
 > tools/wikikit.py …`. The commands below are written bare for brevity — prefix with
@@ -188,9 +188,11 @@ curl -fsSL .../install.sh | sh -s -- --host claude --scope home
   `steering/devloop.md` (`inclusion: auto`) orchestrator, `hooks/` (manual lint/sync), the
   helper tools, and a disabled `settings/mcp.json` SharePoint example (seeded only if absent —
   never clobbers your MCP config). Project scope → `./.kiro/`, home scope → `~/.kiro/`.
-- **Codex** — `spec-*.md` prompts (each becomes a `/` command) into `$CODEX_HOME/prompts`
-  (Codex only reads prompts from there) plus the helper tools in `$CODEX_HOME/tools`; project
-  scope also drops `AGENTS.md` into the repo.
+- **Codex** — Agent Skills (same packages as Claude) into `.agents/skills/` (home → `$HOME`,
+  project → the repo), the helper tools in `$CODEX_HOME/tools`, and `AGENTS.md` (the gated-chain
+  orchestrator) into `$CODEX_HOME` (home) or the repo (project), only if absent. Codex custom
+  prompts are deprecated, so DevLoop ships skills; wire SharePoint/MCP in `config.toml`
+  (`[mcp_servers]`) per `AGENTS.md`.
 
 ## Usage
 
@@ -238,9 +240,11 @@ using a throwaway local repo — no network), **cross-wiki** `[[namespace:Concep
 **Jira config** validation (clean config passes, a misrouted one is caught), a **build
 freshness** check (the generated platform folders match `core/`), **cross-host install**
 (both helper tools land in every host's `tools/` and are removed on uninstall), the
-`ingest.py --wiki` registry-resolved path, and a **Codex self-containment** invariant
-(every `shared/<file>` a role body cites is inlined into the prompt).
-Expect `41 passed, 0 failed` (one stage self-skips if `git` isn't installed).
+`ingest.py --wiki` registry-resolved path, the per-host **Agent Skill** layouts (Claude
+plugin + commands/subagents, Kiro 0.9 skills/subagents/steering/hooks/MCP, Codex
+`.agents/skills` + AGENTS.md), and that **skill bodies are byte-identical across all three
+hosts**.
+Expect `44 passed, 0 failed` (one stage self-skips if `git` isn't installed).
 
 **Manual single-wiki test in your tool.** Install (`./devloop install --host claude`), then in a scratch
 project run `python3 ~/.claude/tools/wikikit.py registry init` (or `python3 tools/wikikit.py …`
@@ -265,11 +269,11 @@ from **tool-specific arrangement**, and a generic engine arranges one into the o
   (templates/guides/examples), and the helper scripts `tools/*.py` (`wikikit.py` +
   `ingest.py`, one copy each).
 - **Per-tool adapter (edit these):** each tool folder owns an `adapter.json` describing
-  *only* its arrangement — which shared files a Claude skill bundles, which files Codex
-  inlines into each prompt, the Kiro template-name mapping. `kind` selects the builder.
+  *only* its arrangement — which shared files + scripts each role's skill bundles, which roles
+  also get a subagent, the Kiro steering/hooks/MCP config. `kind` selects the builder.
 - **Authored, tool-specific (edit these):** `claude-code/.claude-plugin/plugin.json`,
   `.claude-plugin/marketplace.json`, `kiro/README.md`, `codex/AGENTS.md`.
-- **Generated (never edit by hand):** `claude-code/skills|commands|agents`, `codex/prompts`,
+- **Generated (never edit by hand):** `claude-code/skills|commands|agents`, `codex/skills`,
   `kiro/skills|agents|steering|hooks|settings`, and the per-tool copies of `tools/*.py`
   (`wikikit.py` + `ingest.py`).
 
@@ -283,9 +287,11 @@ from **tool-specific arrangement**, and a generic engine arranges one into the o
 made **once** in `core/`; tool-specific arrangement lives **with the tool**; and
 **adding a new tool is just a new folder with an `adapter.json`** (plus a ~15-line builder
 if its packaging shape is genuinely new). The generated folders can't drift — the smoke test
-fails if they do. Codex prompts come out self-contained (templates inlined, since Codex reads
-one file per command); Claude skills bundle their own `shared/`; Kiro (0.9+) reuses those same
-Agent Skills plus subagents, a lean auto-steering orchestrator, and hooks.
+fails if they do. All three hosts now share one **Agent Skill** packaging (agentskills.io):
+Claude bundles them under `skills/` (plus thin commands + subagents); Kiro (0.9+) reuses the
+same skills plus subagents, a lean auto-steering orchestrator, and hooks; Codex installs them to
+`.agents/skills/` with `AGENTS.md` as the orchestrator (its custom prompts are deprecated). The
+skill bodies are byte-identical across hosts — the smoke test enforces it.
 
 ```
 devloop/
@@ -297,10 +303,10 @@ devloop/
 │   └── shared/                 # ← SOURCE: templates, guides, example configs
 ├── tools/                      # ← SOURCE: deterministic helpers — wikikit.py (registry/sync/jira/lint) + ingest.py (multi-format extract)
 ├── examples/                   # sample sources for trying a single wiki
-├── test/smoke_test.sh          # 41-check smoke test (incl. build freshness, host parity, installed-helper runnability + Kiro 0.9 layout)
+├── test/smoke_test.sh          # 44-check smoke test (incl. build freshness, host parity, installed-helper runnability + Kiro 0.9 layout)
 ├── claude-code/  adapter.json + .claude-plugin/plugin.json (authored) → skills/commands/agents (generated)
 ├── kiro/         adapter.json + README (authored)                     → skills/agents/steering/hooks (generated)
-├── codex/        adapter.json + AGENTS.md (authored)                  → prompts/ (generated)
+├── codex/        adapter.json + AGENTS.md (authored)                  → skills/ (generated)
 └── .claude-plugin/marketplace.json
 ```
 

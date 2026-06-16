@@ -2,6 +2,23 @@
 
 All notable changes to DevLoop are documented here. Versioning is semantic.
 
+## [0.10.0]
+Migrated the **Codex** integration off deprecated custom prompts to **Agent Skills** — so all
+three hosts now share one agentskills.io skill packaging:
+- **Codex Agent Skills.** One skill per role under `.agents/skills/<role>/SKILL.md` (home →
+  `$HOME/.agents/skills`, project → the repo), bundling each role's `shared/` + `scripts/`.
+  These are the **same packages as Claude/Kiro** (build.py shares one `emit_skill`); a smoke
+  test asserts the Codex skill bodies are byte-identical to Claude's.
+- **AGENTS.md is now the lean gated-chain orchestrator** that points at the skills (auto-select
+  by description, `$skill` / `/skills`), with a documented `config.toml [mcp_servers]` snippet
+  for wiring SharePoint/MCP (config.toml is user-owned, so it's documented, not shipped).
+- **Dropped the deprecated `codex/prompts/`.** OpenAI deprecated Codex custom prompts in favor
+  of skills; the `/spec-*` prompt commands are replaced by the auto-triggering skills.
+- CLI `install`/`uninstall`/`list`/`doctor` updated for the `.agents/skills` layout; uninstall
+  also clears any legacy `spec-*` prompts from a prior install.
+- **tests:** smoke test 41 → 44 — Codex installs valid skills to `.agents/skills`, skill bodies
+  match Claude's, AGENTS.md points at skills (not deprecated prompts), and `codex/prompts` is gone.
+
 ## [0.9.2]
 Claude Code QA (validated against current 2026 plugin/skill/command/subagent schemas):
 - **plugin.json version no longer drifts.** It was hardcoded (`0.8.0`) and stale; `build.py`

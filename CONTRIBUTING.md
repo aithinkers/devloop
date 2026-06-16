@@ -9,7 +9,7 @@ Thanks for helping! DevLoop has **one source of truth**; the per-tool folders ar
 - Edit the **helper** in `tools/wikikit.py` (one copy).
 - Authored, tool-specific files you may also edit: `claude-code/.claude-plugin/plugin.json`,
   `.claude-plugin/marketplace.json`, `kiro/README.md`, `codex/AGENTS.md`.
-- **Never** hand-edit anything under `claude-code/skills|commands|agents`, `codex/prompts`,
+- **Never** hand-edit anything under `claude-code/skills|commands|agents`, `codex/skills`,
   `kiro/skills|agents|steering|hooks|settings`, or the generated `wikikit.py`/`ingest.py`
   copies — they are build outputs.
 
@@ -18,7 +18,7 @@ Thanks for helping! DevLoop has **one source of truth**; the per-tool folders ar
 # make your change in core/ (or an adapter), then:
 ./devloop build          # regenerate the platform folders
 ./devloop build --check  # verify the tree is in sync (CI runs this)
-bash test/smoke_test.sh  # 41 checks, no network/LLM required
+bash test/smoke_test.sh  # 44 checks, no network/LLM required
 ```
 A pull request must keep `./devloop build --check` clean and the smoke test green — CI
 enforces both.

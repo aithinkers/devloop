@@ -1,25 +1,23 @@
 {
-  "_comment": "Codex arrangement. Codex reads one self-contained .md per command, so each prompt is the role body followed by the listed shared files inlined under titled sections. Authored separately (not generated): AGENTS.md.",
+  "_comment": "Codex arrangement (targets current Codex: Agent Skills on the open agentskills.io standard). Custom prompts are DEPRECATED, so the generator emits one Agent Skill per role under skills/<id>/SKILL.md (installed to .agents/skills/), bundling each role's shared/ templates + scripts/. These are the SAME packages as Claude/Kiro — build.py shares one emit_skill across all three. Authored (not generated): AGENTS.md, the lean gated-chain orchestrator that points at the skills. MCP sources (e.g. SharePoint) are configured by the user in config.toml [mcp_servers] — documented in AGENTS.md, not shipped (config.toml is user-owned and would clobber).",
   "kind": "codex",
   "wikikit_dest": "tools/wikikit.py",
-  "titles": {
-    "requirements-template.md": "Requirements template to follow",
-    "story-template.md": "Story template",
-    "definition-of-ready.md": "Definition of Ready",
-    "jira-organization.md": "Jira organization guide",
-    "jira-config.example.json": "Jira config example (devloop.jira.json)",
-    "wiki-concept-template.md": "Concept article template",
-    "wiki-source-template.md": "Source page template",
-    "wiki-index-template.md": "Index template",
-    "sources-index-template.md": "Source index template",
-    "wiki-profiles.md": "Wiki kind profiles",
-    "wiki-registry.example.json": "Registry example (devloop.wikis.json)"
-  },
-  "prompts": {
-    "spec-context": { "includes": ["wiki-profiles.md", "wiki-registry.example.json", "wiki-concept-template.md", "wiki-index-template.md"] },
-    "spec-requirements": { "includes": ["requirements-template.md"] },
-    "spec-stories": { "includes": ["story-template.md", "definition-of-ready.md", "jira-organization.md"] },
-    "spec-review": { "includes": ["definition-of-ready.md"] },
-    "spec-jira": { "includes": ["jira-organization.md", "jira-config.example.json"] }
+  "roles": {
+    "context-librarian": {
+      "shared": ["wiki-concept-template.md", "wiki-source-template.md", "wiki-index-template.md", "sources-index-template.md", "wiki-profiles.md", "wiki-registry.example.json"],
+      "scripts": ["wikikit.py", "ingest.py"]
+    },
+    "requirements-analyst": {
+      "shared": ["requirements-template.md"]
+    },
+    "story-writer": {
+      "shared": ["story-template.md", "definition-of-ready.md", "jira-organization.md", "jira-config.example.json"]
+    },
+    "story-reviewer": {
+      "shared": ["definition-of-ready.md"]
+    },
+    "jira-organizer": {
+      "shared": ["jira-organization.md", "jira-config.example.json"]
+    }
   }
 }
