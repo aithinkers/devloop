@@ -1,0 +1,130 @@
+#!/usr/bin/env bash
+# devloop — install the DevLoop business-analysis role chain into Claude Code, Kiro, or Codex.
+#
+#   devloop install   [--host claude|kiro|codex|all] [--scope project|home] [--dry-run]
+#   devloop uninstall [--host ...] [--scope ...] [--dry-run]
+#   devloop list      [--host ...] [--scope ...]
+#   devloop doctor
+#   devloop build     [--check]      # (contributors) regenerate platform folders from core/
+#   devloop version | help
+#
+# Scope:  project = current folder (./.claude, ./.kiro, ./.codex)   [default]
+#         home    = your user home (~/.claude, ~/.kiro, ~/.codex)
+set -euo pipefail
+
+REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+VERSION="$(cat "$REPO/VERSION" 2>/dev/null || echo dev)"
+HOSTS_ALL="claude kiro codex"
+DRY=0
+
+c()  { printf '\033[%sm%s\033[0m' "$1" "$2"; }      # color
+say(){ printf '%s\n' "$*"; }
+run(){ if [ "$DRY" = 1 ]; then say "  [dry-run] $*"; else eval "$*"; fi; }
+
+# ---- scope → destination roots -------------------------------------------------
+claude_dir(){ [ "$1" = home ] && echo "$HOME/.claude" || echo "$PWD/.claude"; }
+kiro_dir(){   [ "$1" = home ] && echo "$HOME/.kiro"   || echo "$PWD/.kiro"; }
+# Codex only reads prompts from $CODEX_HOME (defaults to ~/.codex) regardless of scope;
+# project scope additionally drops AGENTS.md into the current folder.
+codex_home(){ echo "${CODEX_HOME:-$HOME/.codex}"; }
+
+# ---- per-host install ----------------------------------------------------------
+install_claude(){ local scope="$1" d; d="$(claude_dir "$scope")"
+  say "$(c '1;36' "Claude Code") → $d  (skills, commands, agents, tools)"
+  run "mkdir -p '$d/skills' '$d/commands' '$d/agents' '$d/tools'"
+  run "cp -R '$REPO/claude-code/skills/.'   '$d/skills/'"
+  run "cp -R '$REPO/claude-code/commands/.' '$d/commands/'"
+  run "cp -R '$REPO/claude-code/agents/.'   '$d/agents/'"
+  run "cp    '$REPO/tools/wikikit.py'       '$d/tools/'"
+}
+install_kiro(){ local scope="$1" d; d="$(kiro_dir "$scope")"
+  say "$(c '1;36' "Kiro") → $d  (steering, spec templates, tools)"
+  run "mkdir -p '$d/steering' '$d/specs/_template' '$d/tools'"
+  run "cp '$REPO/kiro/steering/'*.md        '$d/steering/'"
+  run "cp '$REPO/kiro/specs/_template/'*    '$d/specs/_template/'"
+  run "cp '$REPO/tools/wikikit.py'          '$d/tools/'"
+}
+install_codex(){ local scope="$1" h; h="$(codex_home)"
+  say "$(c '1;36' "Codex") → $h/prompts  (slash commands, tools)"
+  run "mkdir -p '$h/prompts' '$h/tools'"
+  run "cp '$REPO/codex/prompts/'*.md        '$h/prompts/'"
+  run "cp '$REPO/tools/wikikit.py'          '$h/tools/'"
+  if [ "$scope" = project ]; then
+    if [ -e "$PWD/AGENTS.md" ]; then
+      say "  note: $PWD/AGENTS.md exists — review $REPO/codex/AGENTS.md and merge."
+    else
+      run "cp '$REPO/codex/AGENTS.md' '$PWD/AGENTS.md'"
+    fi
+  fi
+}
+
+# ---- per-host uninstall (only our files) --------------------------------------
+uninstall_claude(){ local d; d="$(claude_dir "$1")"
+  say "$(c '1;36' Claude) ✗ $d"
+  for s in "$REPO"/claude-code/skills/*/; do run "rm -rf '$d/skills/$(basename "$s")'"; done
+  for f in "$REPO"/claude-code/commands/*.md; do run "rm -f '$d/commands/$(basename "$f")'"; done
+  for f in "$REPO"/claude-code/agents/*.md;   do run "rm -f '$d/agents/$(basename "$f")'"; done
+  run "rm -f '$d/tools/wikikit.py'"
+}
+uninstall_kiro(){ local d; d="$(kiro_dir "$1")"
+  say "$(c '1;36' Kiro) ✗ $d"
+  run "rm -f '$d/steering/'devloop-*.md"
+  for f in "$REPO"/kiro/specs/_template/*; do run "rm -f '$d/specs/_template/$(basename "$f")'"; done
+  run "rm -f '$d/tools/wikikit.py'"
+}
+uninstall_codex(){ local h; h="$(codex_home)"
+  say "$(c '1;36' Codex) ✗ $h/prompts"
+  for f in "$REPO"/codex/prompts/*.md; do run "rm -f '$h/prompts/$(basename "$f")'"; done
+  run "rm -f '$h/tools/wikikit.py'"
+}
+
+# ---- list ----------------------------------------------------------------------
+present(){ [ -e "$1" ] && c '1;32' "✓" || c '2' "·"; }
+list_host(){ case "$1" in
+  claude) local d; d="$(claude_dir "$2")"; say "Claude ($2: $d)";
+    for s in "$REPO"/claude-code/skills/*/; do printf '  %s skill %s\n' "$(present "$d/skills/$(basename "$s")")" "$(basename "$s")"; done
+    for f in "$REPO"/claude-code/commands/*.md; do printf '  %s cmd   /%s\n' "$(present "$d/commands/$(basename "$f")")" "$(basename "$f" .md)"; done ;;
+  kiro) local d; d="$(kiro_dir "$2")"; say "Kiro ($2: $d)";
+    printf '  %s steering\n' "$(present "$d/steering/devloop-requirements-to-stories.md")"
+    printf '  %s specs/_template\n' "$(present "$d/specs/_template/requirements.md")" ;;
+  codex) local h; h="$(codex_home)"; say "Codex ($h/prompts)";
+    for f in "$REPO"/codex/prompts/*.md; do printf '  %s /%s\n' "$(present "$h/prompts/$(basename "$f")")" "$(basename "$f" .md)"; done ;;
+esac; }
+
+# ---- doctor --------------------------------------------------------------------
+doctor(){
+  say "$(c '1' "devloop $VERSION")  ·  repo: $REPO"
+  for t in bash python3 git; do
+    if command -v "$t" >/dev/null 2>&1; then say "  $(c '1;32' ✓) $t  $($t --version 2>&1 | head -1)";
+    else say "  $(c '1;31' ✗) $t  (required)"; fi
+  done
+  say ""; say "Build freshness:"
+  if python3 "$REPO/build/build.py" --check >/dev/null 2>&1; then say "  $(c '1;32' ✓) generated tree matches core/";
+  else say "  $(c '1;31' ✗) generated tree is STALE — run: devloop build"; fi
+  say ""; say "Install status:"
+  for scope in project home; do for h in $HOSTS_ALL; do
+    case "$h" in claude) p="$(claude_dir "$scope")/skills";; kiro) p="$(kiro_dir "$scope")/steering";; codex) p="$(codex_home)/prompts";; esac
+    [ -d "$p" ] && say "  $(c '1;32' ✓) $h ($scope)" || true
+  done; done
+}
+
+# ---- arg parsing ---------------------------------------------------------------
+HOST=all; SCOPE=project
+parse(){ while [ $# -gt 0 ]; do case "$1" in
+  --host) HOST="$2"; shift 2;; --scope) SCOPE="$2"; shift 2;;
+  --dry-run) DRY=1; shift;; --check) CHECK=1; shift;;
+  *) say "unknown option: $1"; exit 2;; esac; done; }
+hosts(){ [ "$HOST" = all ] && echo "$HOSTS_ALL" || echo "$HOST"; }
+validate(){ case "$SCOPE" in project|home);; *) say "bad --scope: $SCOPE"; exit 2;; esac
+  for h in $(hosts); do case "$h" in claude|kiro|codex);; *) say "bad --host: $h"; exit 2;; esac; done; }
+
+cmd="${1:-help}"; shift || true
+case "$cmd" in
+  install)   parse "$@"; validate; say "$(c '1' "Installing DevLoop ($SCOPE scope)")"; for h in $(hosts); do install_$h "$SCOPE"; done; say "$(c '1;32' Done.)" ;;
+  uninstall) parse "$@"; validate; say "$(c '1' "Uninstalling DevLoop ($SCOPE scope)")"; for h in $(hosts); do uninstall_$h "$SCOPE"; done; say "$(c '1;32' Done.)" ;;
+  list)      parse "$@"; validate; for h in $(hosts); do list_host "$h" "$SCOPE"; done ;;
+  doctor)    doctor ;;
+  build)     CHECK=0; parse "$@"; [ "${CHECK:-0}" = 1 ] && exec python3 "$REPO/build/build.py" --check || exec python3 "$REPO/build/build.py" ;;
+  version|--version|-v) say "devloop $VERSION" ;;
+  help|--help|-h|*) awk 'NR>1{ if($0 ~ /^#/){ sub(/^# ?/,""); print } else exit }' "$REPO/devloop" ;;
+esac

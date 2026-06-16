@@ -1,0 +1,18 @@
+{
+  "_comment": "Kiro arrangement. The generator copies core/shared files into specs/_template/ under Kiro-friendly names, and copies wikikit.py. Authored separately (not generated): steering/devloop-requirements-to-stories.md, README.md.",
+  "kind": "kiro",
+  "wikikit_dest": "tools/wikikit.py",
+  "templates": {
+    "requirements-template.md": "requirements.md",
+    "story-template.md": "stories.md",
+    "definition-of-ready.md": "definition-of-ready.md",
+    "sources-index-template.md": "sources-index.md",
+    "wiki-concept-template.md": "wiki-concept.md",
+    "wiki-source-template.md": "wiki-source.md",
+    "wiki-index-template.md": "wiki-index.md",
+    "wiki-profiles.md": "wiki-profiles.md",
+    "wiki-registry.example.json": "devloop.wikis.example.json",
+    "jira-organization.md": "jira-organization.md",
+    "jira-config.example.json": "devloop.jira.example.json"
+  }
+}

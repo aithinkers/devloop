@@ -1,0 +1,11 @@
+{
+  "name": "devloop-marketplace",
+  "owner": { "name": "Srinivas" },
+  "plugins": [
+    {
+      "name": "devloop",
+      "source": "./claude-code",
+      "description": "Requirements elicitation → user stories → backlog review, as a gated role chain."
+    }
+  ]
+}

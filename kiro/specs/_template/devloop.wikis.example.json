@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "cache_dir": ".devloop/wikis",
+  "wikis": [
+    { "id": "project", "kind": "project", "role": "primary",
+      "source": { "type": "local", "path": "." },
+      "wiki_path": "knowledge/wiki" },
+
+    { "id": "integrations", "kind": "integrations",
+      "source": { "type": "git", "url": "git@github.com:acme/integrations-docs.git",
+                  "ref": "main", "subpath": "", "contains": "sources" },
+      "wiki_path": ".devloop/wikis/integrations/knowledge/wiki" },
+
+    { "id": "devops", "kind": "devops",
+      "source": { "type": "git", "url": "git@github.com:acme/devops-handbook.git",
+                  "ref": "main", "subpath": "", "contains": "sources" },
+      "wiki_path": ".devloop/wikis/devops/knowledge/wiki" },
+
+    { "id": "app-codebase", "kind": "codebase",
+      "source": { "type": "git", "url": "git@github.com:acme/app.git",
+                  "ref": "main", "subpath": "", "contains": "sources" },
+      "wiki_path": ".devloop/wikis/app-codebase/knowledge/wiki" }
+  ]
+}

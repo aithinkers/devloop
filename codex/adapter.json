@@ -1,0 +1,25 @@
+{
+  "_comment": "Codex arrangement. Codex reads one self-contained .md per command, so each prompt is the role body followed by the listed shared files inlined under titled sections. Authored separately (not generated): AGENTS.md.",
+  "kind": "codex",
+  "wikikit_dest": "tools/wikikit.py",
+  "titles": {
+    "requirements-template.md": "Requirements template to follow",
+    "story-template.md": "Story template",
+    "definition-of-ready.md": "Definition of Ready",
+    "jira-organization.md": "Jira organization guide",
+    "jira-config.example.json": "Jira config example (devloop.jira.json)",
+    "wiki-concept-template.md": "Concept article template",
+    "wiki-source-template.md": "Source page template",
+    "wiki-index-template.md": "Index template",
+    "sources-index-template.md": "Source index template",
+    "wiki-profiles.md": "Wiki kind profiles",
+    "wiki-registry.example.json": "Registry example (devloop.wikis.json)"
+  },
+  "prompts": {
+    "spec-context": { "includes": ["wiki-profiles.md", "wiki-registry.example.json", "wiki-concept-template.md"] },
+    "spec-requirements": { "includes": ["requirements-template.md"] },
+    "spec-stories": { "includes": ["story-template.md", "jira-organization.md"] },
+    "spec-review": { "includes": ["definition-of-ready.md"] },
+    "spec-jira": { "includes": ["jira-organization.md", "jira-config.example.json"] }
+  }
+}

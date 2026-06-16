@@ -1,0 +1,12 @@
+# macOS
+.DS_Store
+
+# Runtime artifacts created when DevLoop is *used* in a project (not part of the repo)
+knowledge/
+.devloop/
+devloop.wikis.json
+devloop.jira.json
+requirements.md
+stories.md
+story-review.md
+jira-plan.md
