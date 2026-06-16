@@ -2,6 +2,14 @@
 
 All notable changes to DevLoop are documented here. Versioning is semantic.
 
+## [0.8.1]
+First-run / onboarding fixes (host parity + docs accuracy):
+- **install:** the CLI now installs **both** helper tools (`wikikit.py` + `ingest.py`) into every host's `tools/`, matching the docs that reference `tools/ingest.py`. Previously only `wikikit.py` was copied, so the documented ingest workflow was missing after install. Uninstall removes both.
+- **ingest.py:** fixed the `--wiki` default registry name (`bastack.wikis.json` → `devloop.wikis.json`), which broke the documented registry-resolved ingest path by default.
+- **Codex:** prompts are now genuinely self-contained — `spec-context` inlines `wiki-index-template.md` and `spec-stories` inlines `definition-of-ready.md`, both previously cited in the body but not bundled.
+- **install URLs:** replaced `<owner>`/`your-org` placeholders with `aithinkers` in `install.sh` and the README so the `curl … | sh` bootstrap and plugin commands work as published.
+- **tests:** smoke test grows from 18 → 22 checks — cross-host install/uninstall of both helpers, the `ingest.py --wiki` registry path, and a Codex self-containment invariant (every `shared/<file>` a role body cites must be inlined).
+
 ## [0.8.0]
 - Renamed the project to **DevLoop** (binary `devloop`, configs devloop.*.json). Spec-phase commands stay `/spec-*`; the planned delivery loop will add its own.
 - `tools/ingest.py`: recursive multi-format extraction (docx/pptx/xlsx/drawio/vsdx/svg/html/text, PDF via pdftotext/pypdf), flags images/scanned for agent vision. Wiki source scan is now recursive (subfolders).

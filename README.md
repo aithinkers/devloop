@@ -221,9 +221,12 @@ bash test/smoke_test.sh
 It covers, end to end: registry + single-wiki scaffold, change-detection, the compile step,
 lint and the incremental cache, a **git-backed** wiki (clone + upstream-change detection,
 using a throwaway local repo — no network), **cross-wiki** `[[namespace:Concept]]` lint,
-**Jira config** validation (clean config passes, a misrouted one is caught), and a **build
-freshness** check (the generated platform folders match `core/`).
-Expect `18 passed, 0 failed` (one stage self-skips if `git` isn't installed).
+**Jira config** validation (clean config passes, a misrouted one is caught), a **build
+freshness** check (the generated platform folders match `core/`), **cross-host install**
+(both helper tools land in every host's `tools/` and are removed on uninstall), the
+`ingest.py --wiki` registry-resolved path, and a **Codex self-containment** invariant
+(every `shared/<file>` a role body cites is inlined into the prompt).
+Expect `22 passed, 0 failed` (one stage self-skips if `git` isn't installed).
 
 **Manual single-wiki test in your tool.** Install (`./install.sh claude`), then in a scratch
 project: `wikikit.py registry init`, edit `devloop.wikis.json` down to one local wiki

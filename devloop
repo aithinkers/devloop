@@ -35,20 +35,20 @@ install_claude(){ local scope="$1" d; d="$(claude_dir "$scope")"
   run "cp -R '$REPO/claude-code/skills/.'   '$d/skills/'"
   run "cp -R '$REPO/claude-code/commands/.' '$d/commands/'"
   run "cp -R '$REPO/claude-code/agents/.'   '$d/agents/'"
-  run "cp    '$REPO/tools/wikikit.py'       '$d/tools/'"
+  run "cp    '$REPO/tools/'*.py             '$d/tools/'"
 }
 install_kiro(){ local scope="$1" d; d="$(kiro_dir "$scope")"
   say "$(c '1;36' "Kiro") → $d  (steering, spec templates, tools)"
   run "mkdir -p '$d/steering' '$d/specs/_template' '$d/tools'"
   run "cp '$REPO/kiro/steering/'*.md        '$d/steering/'"
   run "cp '$REPO/kiro/specs/_template/'*    '$d/specs/_template/'"
-  run "cp '$REPO/tools/wikikit.py'          '$d/tools/'"
+  run "cp '$REPO/tools/'*.py                '$d/tools/'"
 }
 install_codex(){ local scope="$1" h; h="$(codex_home)"
   say "$(c '1;36' "Codex") → $h/prompts  (slash commands, tools)"
   run "mkdir -p '$h/prompts' '$h/tools'"
   run "cp '$REPO/codex/prompts/'*.md        '$h/prompts/'"
-  run "cp '$REPO/tools/wikikit.py'          '$h/tools/'"
+  run "cp '$REPO/tools/'*.py                '$h/tools/'"
   if [ "$scope" = project ]; then
     if [ -e "$PWD/AGENTS.md" ]; then
       say "  note: $PWD/AGENTS.md exists — review $REPO/codex/AGENTS.md and merge."
@@ -64,18 +64,18 @@ uninstall_claude(){ local d; d="$(claude_dir "$1")"
   for s in "$REPO"/claude-code/skills/*/; do run "rm -rf '$d/skills/$(basename "$s")'"; done
   for f in "$REPO"/claude-code/commands/*.md; do run "rm -f '$d/commands/$(basename "$f")'"; done
   for f in "$REPO"/claude-code/agents/*.md;   do run "rm -f '$d/agents/$(basename "$f")'"; done
-  run "rm -f '$d/tools/wikikit.py'"
+  for f in "$REPO"/tools/*.py; do run "rm -f '$d/tools/$(basename "$f")'"; done
 }
 uninstall_kiro(){ local d; d="$(kiro_dir "$1")"
   say "$(c '1;36' Kiro) ✗ $d"
   run "rm -f '$d/steering/'devloop-*.md"
   for f in "$REPO"/kiro/specs/_template/*; do run "rm -f '$d/specs/_template/$(basename "$f")'"; done
-  run "rm -f '$d/tools/wikikit.py'"
+  for f in "$REPO"/tools/*.py; do run "rm -f '$d/tools/$(basename "$f")'"; done
 }
 uninstall_codex(){ local h; h="$(codex_home)"
   say "$(c '1;36' Codex) ✗ $h/prompts"
   for f in "$REPO"/codex/prompts/*.md; do run "rm -f '$h/prompts/$(basename "$f")'"; done
-  run "rm -f '$h/tools/wikikit.py'"
+  for f in "$REPO"/tools/*.py; do run "rm -f '$h/tools/$(basename "$f")'"; done
 }
 
 # ---- list ----------------------------------------------------------------------

@@ -160,6 +160,26 @@ HOME="$CT" "$HERE/devloop" uninstall --host claude --scope project >/dev/null
 [ -f "$CT/.claude/skills/story-writer/SKILL.md" ] && no "CLI uninstall left files" || ok "CLI uninstall removed our files"
 cd "$TMP"
 
+echo "[12b] every host installs BOTH helper tools (wikikit.py + ingest.py) where the docs say"
+HT="$TMP/hosttools"; mkdir -p "$HT"
+HOME="$HT" CODEX_HOME="$HT/.codex" "$HERE/devloop" install --host all --scope home >/dev/null
+miss=""
+for pair in ".claude/tools" ".kiro/tools" ".codex/tools"; do
+  for tool in wikikit.py ingest.py; do
+    [ -f "$HT/$pair/$tool" ] || miss="$miss $pair/$tool"
+  done
+done
+[ -z "$miss" ] && ok "wikikit.py + ingest.py present for claude/kiro/codex" || no "missing helper(s):$miss"
+HOME="$HT" CODEX_HOME="$HT/.codex" "$HERE/devloop" uninstall --host all --scope home >/dev/null
+left=""
+for pair in ".claude/tools" ".kiro/tools" ".codex/tools"; do
+  for tool in wikikit.py ingest.py; do
+    [ -f "$HT/$pair/$tool" ] && left="$left $pair/$tool"
+  done
+done
+[ -z "$left" ] && ok "uninstall removed both helpers for all hosts" || no "uninstall left:$left"
+cd "$TMP"
+
 echo "[13] ingest.py: recursive multi-format extraction (docx + drawio + nested md; image flagged)"
 IG="$TMP/ig"; SRCD="$IG/sources"; mkdir -p "$SRCD/sub"
 printf '# SOP\nStep one.\n' > "$SRCD/sub/sop.md"
@@ -177,6 +197,45 @@ python3 "$HERE/tools/ingest.py" "$SRCD" --into "$IG/knowledge/raw" >/dev/null
   && grep -q "Auth Service" "$IG/knowledge/raw/arch.drawio.txt" \
   && grep -q "FLAGGED" "$IG/knowledge/raw/_INGEST.md"; } \
   && ok "ingest extracted docx+drawio, recursed subfolder, flagged image" || no "ingest extraction"
+cd "$TMP"
+
+echo "[13b] ingest.py --wiki: resolve raw/ via devloop.wikis.json registry (documented path)"
+IW="$TMP/igwiki"; mkdir -p "$IW"; cd "$IW"
+python3 "$WK" registry init >/dev/null
+python3 - <<'PY'
+import json
+r=json.load(open("devloop.wikis.json"))
+r["wikis"]=[{"id":"project","kind":"project","role":"primary",
+             "source":{"type":"local","path":"."},"wiki_path":"knowledge/wiki"}]
+json.dump(r,open("devloop.wikis.json","w"),indent=2)
+PY
+mkdir -p src; printf '# Note\nhi\n' > src/note.md
+python3 "$HERE/tools/ingest.py" src --wiki project >/dev/null
+[ -f "$IW/knowledge/raw/note.md" ] && ok "--wiki resolved raw/ from devloop.wikis.json" \
+  || no "--wiki path did not land raw/ via registry"
+cd "$TMP"
+
+echo "[14] codex prompts are self-contained: every shared/<file> a role body cites is inlined"
+if REPO="$HERE" python3 - <<'PY'
+import json, os, re, sys
+repo = os.environ["REPO"]
+roles = {r["id"]: r for r in json.load(open(f"{repo}/core/roles.json"))["roles"]}
+adapter = json.load(open(f"{repo}/codex/adapter.json"))
+gaps = []
+for rid, r in roles.items():
+    cmd = r["command"]
+    spec = adapter["prompts"].get(cmd)
+    if spec is None:
+        continue
+    body = open(f"{repo}/core/{r['body']}").read()
+    cited = set(re.findall(r'shared/([A-Za-z0-9._-]+)', body))
+    inlined = set(spec.get("includes", []))
+    for f in sorted(cited - inlined):
+        gaps.append(f"{cmd}:{f}")
+if gaps:
+    print(" ".join(gaps)); sys.exit(1)
+PY
+then ok "no codex prompt cites an un-inlined shared/ file"; else no "codex un-inlined shared refs (see above)"; fi
 cd "$TMP"
 
 echo

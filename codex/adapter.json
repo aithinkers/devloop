@@ -16,9 +16,9 @@
     "wiki-registry.example.json": "Registry example (devloop.wikis.json)"
   },
   "prompts": {
-    "spec-context": { "includes": ["wiki-profiles.md", "wiki-registry.example.json", "wiki-concept-template.md"] },
+    "spec-context": { "includes": ["wiki-profiles.md", "wiki-registry.example.json", "wiki-concept-template.md", "wiki-index-template.md"] },
     "spec-requirements": { "includes": ["requirements-template.md"] },
-    "spec-stories": { "includes": ["story-template.md", "jira-organization.md"] },
+    "spec-stories": { "includes": ["story-template.md", "definition-of-ready.md", "jira-organization.md"] },
     "spec-review": { "includes": ["definition-of-ready.md"] },
     "spec-jira": { "includes": ["jira-organization.md", "jira-config.example.json"] }
   }

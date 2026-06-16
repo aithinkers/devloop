@@ -18,7 +18,7 @@ No third-party dependencies are required:
 
 Usage:
   ingest.py SOURCES_DIR --into RAW_DIR
-  ingest.py SOURCES_DIR --wiki ID [--registry bastack.wikis.json]   # resolve raw/ via registry
+  ingest.py SOURCES_DIR --wiki ID [--registry devloop.wikis.json]   # resolve raw/ via registry
 """
 import os, sys, re, html, json, zipfile, shutil, subprocess
 import xml.etree.ElementTree as ET
@@ -121,7 +121,7 @@ EXTRACTORS = {".docx": docx_text, ".pptx": pptx_text, ".xlsx": xlsx_text,
 
 def raw_dir(args):
     if "--wiki" in args:
-        reg = args[args.index("--registry") + 1] if "--registry" in args else "bastack.wikis.json"
+        reg = args[args.index("--registry") + 1] if "--registry" in args else "devloop.wikis.json"
         if not os.path.exists(reg): sys.exit(f"registry not found: {reg}")
         wid = args[args.index("--wiki") + 1]
         for w in json.load(open(reg))["wikis"]:
