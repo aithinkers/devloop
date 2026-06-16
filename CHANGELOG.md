@@ -2,6 +2,19 @@
 
 All notable changes to DevLoop are documented here. Versioning is semantic.
 
+## [0.11.3]
+Make home-scope Kiro hooks shell-safe for paths with spaces (review follow-up):
+- The home-scope rewrite wrote the absolute tools path into the hook command **unquoted**, so a
+  `HOME` containing spaces (e.g. `/Users/My Name/…`) produced a command that the shell split
+  mid-path. The rewrite now **shell-quotes** the path (via `shlex.quote`) and is JSON-aware
+  (re-serializes the `.kiro.hook` so quoting is escaped correctly).
+- **`doctor` now actually resolves each hook command** — it shell-tokenizes the command
+  (`shlex.split`) and checks the script path is a real file (absolute, or relative to the
+  workspace), catching both workspace-relative leftovers and unquoted-space breakage instead of
+  a substring heuristic.
+- **tests:** smoke test 47 → 49 — installs into a `HOME` path containing spaces and runs every
+  shipped hook command verbatim from an unrelated workspace.
+
 ## [0.11.2]
 Follow-up Kiro review fixes (home-scope + host-neutral content):
 - **Home-scope hooks now work from any workspace.** `--scope home` installs hooks/steering that

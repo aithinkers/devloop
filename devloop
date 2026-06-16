@@ -50,11 +50,21 @@ install_kiro(){ local scope="$1" d; d="$(kiro_dir "$scope")"
   run "chmod +x '$d/tools/'*.py"
   # Hooks/steering reference `.kiro/tools/…` — correct for a project install (Kiro runs hook
   # commands from the workspace root). For a HOME install those must be the absolute ~/.kiro/tools
-  # path, or they break from any other workspace. Rewrite the installed copies in place.
+  # path (shell-quoted, since $HOME may contain spaces), or they break from any other workspace.
   if [ "$scope" = home ]; then
-    if [ "$DRY" = 1 ]; then say "  [dry-run] rewrite .kiro/tools → $d/tools in installed hooks + steering";
+    if [ "$DRY" = 1 ]; then say "  [dry-run] rewrite .kiro/tools → $d/tools (shell-quoted) in installed hooks + steering";
     else for f in "$d/hooks/"*.kiro.hook "$d/steering/devloop.md"; do
-      [ -f "$f" ] && python3 -c "import sys;p=sys.argv[1];s=open(p).read().replace('.kiro/tools/',sys.argv[2]+'/');open(p,'w').write(s)" "$f" "$d/tools"
+      [ -f "$f" ] && python3 -c "
+import sys, re, json, shlex
+p, td = sys.argv[1], sys.argv[2]
+sub = lambda s: re.sub(r'\.kiro/tools/(\S+?\.py)', lambda m: shlex.quote(td + '/' + m.group(1)), s)
+if p.endswith('.kiro.hook'):
+    d = json.load(open(p)); d['then']['command'] = sub(d['then']['command'])
+    out = json.dumps(d, indent=2) + '\n'
+else:
+    out = sub(open(p).read())
+open(p, 'w').write(out)
+" "$f" "$d/tools"
     done; fi
   fi
   # MCP config is user-owned: only seed our disabled example if none exists (never clobber).
@@ -144,10 +154,22 @@ doctor(){
     else
       say "  $(c '1;31' ✗) $h ($scope) — content present but wikikit.py missing/not runnable (reinstall)"
     fi
-    # A home-scope Kiro install must rewrite hook commands to an absolute tools path; a leftover
-    # workspace-relative `python3 .kiro/tools/…` would break when Kiro runs it from any workspace.
-    if [ "$h" = kiro ] && [ "$scope" = home ] && grep -l 'python3 \.kiro/tools/' "$d/hooks/"*.kiro.hook >/dev/null 2>&1; then
-      say "  $(c '1;33' ⚠) kiro (home) — hook commands are workspace-relative; reinstall to fix the paths"
+    # Verify each Kiro hook's command actually resolves to a real script the way a shell parses
+    # it (catches workspace-relative leftovers AND unquoted paths with spaces). The base for a
+    # relative path is the workspace where Kiro runs hooks (project install → this dir's root).
+    if [ "$h" = kiro ]; then
+      for hk in "$d/hooks/"*.kiro.hook; do [ -f "$hk" ] || continue
+        python3 -c "
+import sys, json, shlex, os
+hk, base = sys.argv[1], sys.argv[2]
+parts = shlex.split(json.load(open(hk))['then']['command'])   # shell-accurate tokenization
+pys = [a for a in parts if a.endswith('.py')]
+if not pys: sys.exit(0)
+sp = pys[0] if os.path.isabs(pys[0]) else os.path.join(base, pys[0])
+sys.exit(0 if os.path.isfile(sp) else 1)
+" "$hk" "$(dirname "$d")" >/dev/null 2>&1 \
+          || say "  $(c '1;33' ⚠) kiro ($scope) — hook $(basename "$hk" .kiro.hook) command path doesn't resolve (reinstall)"
+      done
     fi
   done; done
 }

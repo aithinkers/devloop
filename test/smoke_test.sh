@@ -322,6 +322,25 @@ done
   || no "home-scope hook failed to run from another workspace"
 cd "$TMP"
 
+echo "[12m] home-scope Kiro hooks are shell-safe when the HOME path contains spaces"
+HS="$TMP/home with spaces"; mkdir -p "$HS"
+HOME="$HS" "$HERE/devloop" install --host kiro --scope home >/dev/null 2>&1
+# every hook must still be valid JSON and shell-quote the spaced absolute path
+sq_ok=1
+for h in "$HS"/.kiro/hooks/*.kiro.hook; do
+  python3 -c "import json,sys;json.load(open(sys.argv[1]))" "$h" 2>/dev/null || { sq_ok=0; echo "    invalid JSON: $h"; }
+done
+[ "$sq_ok" = 1 ] && ok "spaced-HOME hooks remain valid JSON" || no "spaced-HOME hook is invalid JSON"
+WS3="$TMP/kiro-ws3"; mkdir -p "$WS3"
+_devloop_local_registry "$WS3" "$HS/.kiro/tools/wikikit.py"
+sp_run=1
+for h in "$HS"/.kiro/hooks/*.kiro.hook; do
+  cmd=$(_hook_cmd "$h"); ( cd "$WS3" && eval "$cmd" >/dev/null 2>&1 ) || { sp_run=0; echo "    failed (spaced HOME): $cmd"; }
+done
+[ "$sp_run" = 1 ] && ok "hooks run verbatim from another workspace even when HOME has spaces" \
+  || no "spaced-HOME hook command is not shell-safe (unquoted path)"
+cd "$TMP"
+
 echo "[12g] Kiro MCP config is user-owned: install never clobbers an existing mcp.json"
 MT="$TMP/kiro-mcp"; mkdir -p "$MT/.kiro/settings"
 printf '{"mcpServers":{"mine":{"command":"node","args":["x.js"]}}}\n' > "$MT/.kiro/settings/mcp.json"
