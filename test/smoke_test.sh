@@ -241,7 +241,7 @@ HOME="$KT" "$HERE/devloop" install --host kiro --scope home >/dev/null
 K="$KT/.kiro"
 # Agent Skills: name==folder, agentskills.io frontmatter (name + description)
 sk_ok=1
-for s in "$HERE"/kiro/skills/*/; do id="$(basename "$s")"
+for s in "$HERE"/skills/*/; do id="$(basename "$s")"
   f="$K/skills/$id/SKILL.md"
   [ -f "$f" ] && grep -q "^name: $id$" "$f" && grep -q "^description: " "$f" || sk_ok=0
 done
@@ -283,12 +283,12 @@ printf '{"mcpServers":{"mine":{"command":"node","args":["x.js"]}}}\n' > "$MT/.ki
 grep -q '"mine"' "$MT/.kiro/settings/mcp.json" && ok "existing mcp.json preserved on install" || no "install clobbered user mcp.json"
 cd "$TMP"
 
-echo "[12f] Kiro skill bodies are byte-identical to the Claude skill bodies (single source)"
-diffs=0
-for s in "$HERE"/kiro/skills/*/SKILL.md; do id="$(basename "$(dirname "$s")")"
-  cmp -s "$s" "$HERE/claude-code/skills/$id/SKILL.md" || diffs=$((diffs+1))
-done
-[ "$diffs" = 0 ] && ok "Kiro & Claude skill SKILL.md bodies match (no content fork)" || no "$diffs skill body mismatch(es)"
+echo "[12f] ONE canonical skills/ library at repo root — no per-host skill copies"
+n=$(ls -d "$HERE"/skills/*/ 2>/dev/null | wc -l | tr -d ' ')
+fork=""
+for stale in claude-code codex/skills kiro/skills; do [ -e "$HERE/$stale" ] && fork="$fork $stale"; done
+{ [ "$n" -eq 5 ] && [ -f "$HERE/skills/context-librarian/SKILL.md" ] && [ -z "$fork" ]; } \
+  && ok "single root skills/ (5 roles), no per-host copies to fork" || no "skills not single-source (n=$n fork:$fork)"
 cd "$TMP"
 
 echo "[12h] Claude plugin manifest: version tracks VERSION, no redundant path keys, has metadata"
@@ -296,7 +296,7 @@ VER="$(cat "$HERE/VERSION")"
 if python3 - "$HERE" "$VER" <<'PY'
 import json,sys
 repo,ver=sys.argv[1],sys.argv[2]
-pj=json.load(open(f"{repo}/claude-code/.claude-plugin/plugin.json"))
+pj=json.load(open(f"{repo}/.claude-plugin/plugin.json"))
 assert pj.get("name")=="devloop"
 assert pj.get("version")==ver, (pj.get("version"),ver)            # stamped, not drifting
 for k in ("commands","skills","agents"): assert k not in pj, k    # rely on auto-discovery
@@ -305,13 +305,14 @@ mk=json.load(open(f"{repo}/.claude-plugin/marketplace.json"))
 assert mk["owner"]["name"]
 for pl in mk["plugins"]:
     assert pl["name"] and pl["source"]
+    assert pl["source"]==".", pl["source"]                        # plugin root = repo root
 PY
 then ok "plugin.json stamped to $VER, clean manifest + marketplace valid"; else no "plugin/marketplace manifest invalid"; fi
 cd "$TMP"
 
 echo "[12i] build --check fails when plugin.json version drifts from VERSION (then restamps)"
 python3 - "$HERE" <<'PY'
-import json,sys; p=f"{sys.argv[1]}/claude-code/.claude-plugin/plugin.json"
+import json,sys; p=f"{sys.argv[1]}/.claude-plugin/plugin.json"
 d=json.load(open(p)); d["version"]="0.0.0-drift"; json.dump(d,open(p,"w"),indent=2); open(p,"a").write("\n")
 PY
 if python3 "$HERE/build/build.py" --check >/dev/null 2>&1; then no "build --check missed plugin.json version drift"; else ok "build --check catches plugin.json version drift"; fi
@@ -321,10 +322,10 @@ cd "$TMP"
 
 echo "[12j] Claude commands carry argument-hint; subagents preload their skill"
 ch_ok=1
-for c in "$HERE"/claude-code/commands/*.md; do grep -q '^argument-hint:' "$c" && grep -q '^description:' "$c" || ch_ok=0; done
+for c in "$HERE"/commands/*.md; do grep -q '^argument-hint:' "$c" && grep -q '^description:' "$c" || ch_ok=0; done
 [ "$ch_ok" = 1 ] && ok "every command has description + argument-hint" || no "command frontmatter incomplete"
 ag_ok=1
-for a in "$HERE"/claude-code/agents/*.md; do id="$(basename "$a" .md)"
+for a in "$HERE"/agents/*.md; do id="$(basename "$a" .md)"
   grep -q "^skills: \[$id\]$" "$a" && grep -q "Follow the method in the \`$id\` skill" "$a" || ag_ok=0
 done
 [ "$ag_ok" = 1 ] && ok "every subagent preloads + points at its skill" || no "subagent skill wiring incomplete"
@@ -365,17 +366,17 @@ python3 "$HERE/tools/ingest.py" src --wiki project >/dev/null
   || no "--wiki path did not land raw/ via registry"
 cd "$TMP"
 
-echo "[14] Codex migrated to Agent Skills: skills present, byte-identical to Claude, no deprecated prompts"
+echo "[14] Codex installs the shared Agent Skills to .agents/skills (no deprecated prompts)"
 CX="$TMP/codex"; mkdir -p "$CX"
 HOME="$CX" CODEX_HOME="$CX/.codex" "$HERE/devloop" install --host codex --scope home >/dev/null
 sd="$CX/.agents/skills"
 cx_ok=1; diffs=0
-for s in "$HERE"/codex/skills/*/SKILL.md; do id="$(basename "$(dirname "$s")")"
+for s in "$HERE"/skills/*/SKILL.md; do id="$(basename "$(dirname "$s")")"
   [ -f "$sd/$id/SKILL.md" ] && grep -q "^name: $id$" "$sd/$id/SKILL.md" || cx_ok=0
-  cmp -s "$s" "$HERE/claude-code/skills/$id/SKILL.md" || diffs=$((diffs+1))
+  cmp -s "$s" "$sd/$id/SKILL.md" || diffs=$((diffs+1))   # installed == the one canonical skill
 done
 [ "$cx_ok" = 1 ] && ok "Codex installs Agent Skills to .agents/skills with valid frontmatter" || no "Codex skills missing/invalid"
-[ "$diffs" = 0 ] && ok "Codex & Claude skill bodies byte-identical (single source)" || no "$diffs Codex skill body mismatch(es)"
+[ "$diffs" = 0 ] && ok "installed Codex skills are the canonical root skills/ (no copy drift)" || no "$diffs Codex skill mismatch(es)"
 # AGENTS.md orchestrator landed (home → $CODEX_HOME) and points at skills, not deprecated prompts
 { [ -f "$CX/.codex/AGENTS.md" ] && grep -q 'context-librarian` skill' "$CX/.codex/AGENTS.md" \
   && ! grep -q '/spec-context' "$CX/.codex/AGENTS.md"; } \

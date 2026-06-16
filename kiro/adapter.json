@@ -1,31 +1,9 @@
 {
-  "_comment": "Kiro arrangement (targets Kiro 0.9+: Agent Skills, custom subagents, auto-steering, hooks). The generator emits, per role: an Agent Skill skills/<id>/SKILL.md (frontmatter + body, agentskills.io-compatible) bundling its shared/ templates and scripts/, plus (when subagent=true) a thin agents/<id>.md that points at the skill. It also generates ONE lean auto-steering orchestrator (steering/devloop.md) that only sequences the phases, and the hooks. Authored separately (not generated): README.md. The skill bodies are the single source — subagents and steering never restate them.",
+  "_comment": "Kiro host-specific wrapper config (Kiro 0.9+). Skills are generated ONCE to the repo-root skills/ (shared by all hosts) and the CLI copies them to .kiro/skills/ on install; this adapter only describes Kiro's wrappers: custom subagents (with Kiro's read/write/shell/web tool vocab) for the roles roles.json marks subagent:true, a lean auto-steering orchestrator, manual hooks, and a disabled example MCP config. Authored (not generated): README.md.",
   "kind": "kiro",
-  "wikikit_dest": "tools/wikikit.py",
-  "roles": {
-    "context-librarian": {
-      "shared": ["wiki-concept-template.md", "wiki-source-template.md", "wiki-index-template.md", "sources-index-template.md", "wiki-profiles.md", "wiki-registry.example.json"],
-      "scripts": ["wikikit.py", "ingest.py"],
-      "subagent": true,
-      "subagent_tools": ["read", "write", "shell", "web"]
-    },
-    "requirements-analyst": {
-      "shared": ["requirements-template.md"],
-      "subagent": true,
-      "subagent_tools": ["read", "write"]
-    },
-    "story-writer": {
-      "shared": ["story-template.md", "definition-of-ready.md", "jira-organization.md", "jira-config.example.json"],
-      "subagent": false
-    },
-    "story-reviewer": {
-      "shared": ["definition-of-ready.md"],
-      "subagent": false
-    },
-    "jira-organizer": {
-      "shared": ["jira-organization.md", "jira-config.example.json"],
-      "subagent": false
-    }
+  "subagent_tools": {
+    "context-librarian": ["read", "write", "shell", "web"],
+    "requirements-analyst": ["read", "write"]
   },
   "steering": {
     "name": "devloop",
@@ -48,7 +26,7 @@
     }
   ],
   "mcp": {
-    "_note": "Example only — installed to .kiro/settings/mcp.json ONLY IF that file is absent (never clobbers your real MCP config). The Context Librarian can read SharePoint via a Microsoft Graph / SharePoint MCP server; there is no single official one, so fill in `args` with the server you use, set `disabled` to false, and provide the token via the referenced env var (never hardcode secrets).",
+    "_note": "Example only — installed to .kiro/settings/mcp.json ONLY IF that file is absent (never clobbers your real MCP config). Point `args` at the Microsoft Graph / SharePoint MCP server you use, set `disabled` to false, and provide the token via the referenced env var (never hardcode secrets).",
     "servers": {
       "sharepoint": {
         "command": "npx",

@@ -4,7 +4,7 @@
   "plugins": [
     {
       "name": "devloop",
-      "source": "./claude-code",
+      "source": ".",
       "description": "Requirements elicitation → user stories → backlog review, as a gated role chain."
     }
   ]

@@ -2,6 +2,25 @@
 
 All notable changes to DevLoop are documented here. Versioning is semantic.
 
+## [0.11.0]
+Collapsed to **one canonical skills library** (Superpowers-style), now that all three hosts read
+the agentskills.io Agent Skill format. Previously the build generated three byte-identical skill
+trees (`claude-code/skills`, `codex/skills`, `kiro/skills`) — that triplication is gone:
+- **Single `skills/` at the repo root** is the only skill copy. Claude uses it in place (the
+  plugin root is now the repo root: `.claude-plugin/plugin.json` moved to root,
+  `marketplace.json` source → `.`); the CLI copies the same `skills/` to `.kiro/skills` and
+  `.agents/skills` at install. Skills *can't* fork because there's one tree.
+- **Slimmer engine.** `build.py` generates the one `skills/` library plus only host-specific
+  wrappers — Claude `commands/`+`agents/` at root, and `kiro/{agents,steering,hooks,settings}`.
+  Generated file count dropped from 80 → 34. Per-role `shared`/`scripts`/`subagent` config moved
+  into `core/roles.json`; `kiro/adapter.json` keeps only Kiro's tool vocab + steering/hooks/MCP.
+- **Removed** the `claude-code/` package dir and `codex/adapter.json` (Codex needs no generated
+  package — its skills come from the root library; `codex/AGENTS.md` stays as the orchestrator).
+- CLI install/uninstall/list/doctor updated for the new layout; helper tools still install to
+  each host and stay executable.
+- **tests:** smoke test stays at 44 — now asserting a single-source `skills/` (no per-host
+  copies), the root-level Claude plugin (`source: "."`), and all-host install from the one library.
+
 ## [0.10.0]
 Migrated the **Codex** integration off deprecated custom prompts to **Agent Skills** — so all
 three hosts now share one agentskills.io skill packaging:

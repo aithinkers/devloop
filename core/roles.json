@@ -1,5 +1,5 @@
 {
-  "_comment": "Tool-agnostic role definitions. The single source for each role's identity, body file, command name, description and one-line summary. Tool-specific arrangement lives in each tool folder's adapter.json.",
+  "_comment": "Single source for each role: identity, body file, command name, description, one-line summary, the shared/ templates + tool scripts its Agent Skill bundles, and whether it warrants an isolated subagent. The build generates ONE canonical skills/<id>/ from this; host-specific tool vocab for subagents lives in build.py (Claude) and kiro/adapter.json (Kiro).",
   "roles": [
     {
       "id": "context-librarian",
@@ -7,7 +7,10 @@
       "body": "00-context-librarian.md",
       "command": "spec-context",
       "description": "Compile existing company knowledge (docs, meeting minutes, processes, integration specs, wikis, SharePoint, URLs) into an interlinked LLM-Wiki — concept articles with [[wikilinks]], source-traceable frontmatter, and an index.md routing layer — so requirements align to what already exists. Use FIRST, before eliciting requirements, whenever the user can point to source material.",
-      "summary": "Ask me one category at a time where knowledge lives (local files/folders, wikis & URLs, SharePoint, paste-in text), manage the wiki registry with `wikikit.py`, and compile a library of interlinked LLM-Wikis under `knowledge/`. Cite every fact; flag conflicts and gaps. Hand off to /spec-requirements when done."
+      "summary": "Ask me one category at a time where knowledge lives (local files/folders, wikis & URLs, SharePoint, paste-in text), manage the wiki registry with `wikikit.py`, and compile a library of interlinked LLM-Wikis under `knowledge/`. Cite every fact; flag conflicts and gaps. Hand off to /spec-requirements when done.",
+      "shared": ["wiki-concept-template.md", "wiki-source-template.md", "wiki-index-template.md", "sources-index-template.md", "wiki-profiles.md", "wiki-registry.example.json"],
+      "scripts": ["wikikit.py", "ingest.py"],
+      "subagent": true
     },
     {
       "id": "requirements-analyst",
@@ -15,7 +18,10 @@
       "body": "01-requirements-analyst.md",
       "command": "spec-requirements",
       "description": "Elicit and document software requirements through Socratic, one-question-at-a-time interviewing. Use when the user has a feature idea, problem, or 'we need to build X' and needs it turned into a structured requirements document before any stories or code. Produces requirements.md with numbered FR/NFR IDs.",
-      "summary": "Read the wiki library if present and run a Socratic, one-question-at-a-time interview (offer A/B/C options), only asking about gaps the wikis don't cover. Then draft `requirements.md` (numbered FR/NFR, each tagged with wiki + source refs) and get my sign-off. No stories or code in this phase."
+      "summary": "Read the wiki library if present and run a Socratic, one-question-at-a-time interview (offer A/B/C options), only asking about gaps the wikis don't cover. Then draft `requirements.md` (numbered FR/NFR, each tagged with wiki + source refs) and get my sign-off. No stories or code in this phase.",
+      "shared": ["requirements-template.md"],
+      "scripts": [],
+      "subagent": true
     },
     {
       "id": "story-writer",
@@ -23,7 +29,10 @@
       "body": "02-story-writer.md",
       "command": "spec-stories",
       "description": "Convert an approved requirements document into a backlog of epics and INVEST user stories with Gherkin acceptance criteria and a traceability matrix. Use after requirements exist and the user wants stories, tickets, or a backlog. Produces stories.md.",
-      "summary": "Read the approved `requirements.md`, group requirements into epics, decompose into INVEST user stories with Gherkin acceptance criteria, and write `stories.md` with a traceability matrix. If `devloop.jira.json` exists, add a concrete per-story Jira mapping; otherwise tag components/labels lightly. Stop if requirements are missing/unapproved."
+      "summary": "Read the approved `requirements.md`, group requirements into epics, decompose into INVEST user stories with Gherkin acceptance criteria, and write `stories.md` with a traceability matrix. If `devloop.jira.json` exists, add a concrete per-story Jira mapping; otherwise tag components/labels lightly. Stop if requirements are missing/unapproved.",
+      "shared": ["story-template.md", "definition-of-ready.md", "jira-organization.md", "jira-config.example.json"],
+      "scripts": [],
+      "subagent": false
     },
     {
       "id": "story-reviewer",
@@ -31,7 +40,10 @@
       "body": "03-story-reviewer.md",
       "command": "spec-review",
       "description": "Independently review a drafted backlog for INVEST compliance, Definition of Ready, acceptance-criteria quality, and requirement coverage. Use before committing stories to a tracker. Produces story-review.md.",
-      "summary": "Independently review `stories.md` against `requirements.md`: coverage/traceability, INVEST, acceptance-criteria quality, and Definition of Ready. Write `story-review.md` with a findings table and prioritized fixes. Recommend changes; do not silently rewrite."
+      "summary": "Independently review `stories.md` against `requirements.md`: coverage/traceability, INVEST, acceptance-criteria quality, and Definition of Ready. Write `story-review.md` with a findings table and prioritized fixes. Recommend changes; do not silently rewrite.",
+      "shared": ["definition-of-ready.md"],
+      "scripts": [],
+      "subagent": false
     },
     {
       "id": "jira-organizer",
@@ -39,7 +51,10 @@
       "body": "04-jira-organizer.md",
       "command": "spec-jira",
       "description": "Recommend how Jira should be organized (BA vs TECH projects; issue types incl. Requirement and Decision; Components derived from the codebase/integration wikis; labels; field mappings) and capture the real setup in devloop.jira.json so the Story Writer can suggest concrete per-story mappings. Guidance and config only; no import file or live changes. Use after stories are written/reviewed.",
-      "summary": "Do two things: (1) recommend how Jira should be organized for this project (BA vs TECH projects, issue types incl. Requirement/Decision, Components from the wikis, labels, field/hierarchy mappings); (2) capture the real setup in `devloop.jira.json` (`wikikit.py jira init` / `jira validate`). Write `jira-plan.md` and, if `stories.md` exists, a Story→Project→Type→Component→Labels→Priority mapping table. Guidance + config only."
+      "summary": "Do two things: (1) recommend how Jira should be organized for this project (BA vs TECH projects, issue types incl. Requirement/Decision, Components from the wikis, labels, field/hierarchy mappings); (2) capture the real setup in `devloop.jira.json` (`wikikit.py jira init` / `jira validate`). Write `jira-plan.md` and, if `stories.md` exists, a Story→Project→Type→Component→Labels→Priority mapping table. Guidance + config only.",
+      "shared": ["jira-organization.md", "jira-config.example.json"],
+      "scripts": [],
+      "subagent": false
     }
   ]
 }

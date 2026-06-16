@@ -33,16 +33,16 @@ codex_skills_dir(){ [ "$1" = home ] && echo "$HOME/.agents/skills" || echo "$PWD
 install_claude(){ local scope="$1" d; d="$(claude_dir "$scope")"
   say "$(c '1;36' "Claude Code") → $d  (skills, commands, agents, tools)"
   run "mkdir -p '$d/skills' '$d/commands' '$d/agents' '$d/tools'"
-  run "cp -R '$REPO/claude-code/skills/.'   '$d/skills/'"
-  run "cp -R '$REPO/claude-code/commands/.' '$d/commands/'"
-  run "cp -R '$REPO/claude-code/agents/.'   '$d/agents/'"
+  run "cp -R '$REPO/skills/.'               '$d/skills/'"
+  run "cp -R '$REPO/commands/.'             '$d/commands/'"
+  run "cp -R '$REPO/agents/.'               '$d/agents/'"
   run "cp    '$REPO/tools/'*.py             '$d/tools/'"
   run "chmod +x '$d/tools/'*.py"
 }
 install_kiro(){ local scope="$1" d; d="$(kiro_dir "$scope")"
   say "$(c '1;36' "Kiro") → $d  (skills, agents, steering, hooks, tools, MCP example)"
   run "mkdir -p '$d/skills' '$d/agents' '$d/steering' '$d/hooks' '$d/tools'"
-  run "cp -R '$REPO/kiro/skills/.'          '$d/skills/'"
+  run "cp -R '$REPO/skills/.'               '$d/skills/'"
   run "cp '$REPO/kiro/agents/'*.md          '$d/agents/'"
   run "cp '$REPO/kiro/steering/'*.md        '$d/steering/'"
   run "cp '$REPO/kiro/hooks/'*.kiro.hook    '$d/hooks/'"
@@ -59,7 +59,7 @@ install_kiro(){ local scope="$1" d; d="$(kiro_dir "$scope")"
 install_codex(){ local scope="$1" h sk agents_dest; h="$(codex_home)"; sk="$(codex_skills_dir "$scope")"
   say "$(c '1;36' "Codex") → $sk  (Agent Skills) + $h/tools"
   run "mkdir -p '$sk' '$h/tools'"
-  run "cp -R '$REPO/codex/skills/.'         '$sk/'"
+  run "cp -R '$REPO/skills/.'               '$sk/'"
   run "cp '$REPO/tools/'*.py                '$h/tools/'"
   run "chmod +x '$h/tools/'*.py"
   # AGENTS.md orchestrator (user-owned): home → $CODEX_HOME, project → $PWD; only if absent.
@@ -74,14 +74,14 @@ install_codex(){ local scope="$1" h sk agents_dest; h="$(codex_home)"; sk="$(cod
 # ---- per-host uninstall (only our files) --------------------------------------
 uninstall_claude(){ local d; d="$(claude_dir "$1")"
   say "$(c '1;36' Claude) ✗ $d"
-  for s in "$REPO"/claude-code/skills/*/; do run "rm -rf '$d/skills/$(basename "$s")'"; done
-  for f in "$REPO"/claude-code/commands/*.md; do run "rm -f '$d/commands/$(basename "$f")'"; done
-  for f in "$REPO"/claude-code/agents/*.md;   do run "rm -f '$d/agents/$(basename "$f")'"; done
+  for s in "$REPO"/skills/*/; do run "rm -rf '$d/skills/$(basename "$s")'"; done
+  for f in "$REPO"/commands/*.md; do run "rm -f '$d/commands/$(basename "$f")'"; done
+  for f in "$REPO"/agents/*.md;   do run "rm -f '$d/agents/$(basename "$f")'"; done
   for f in "$REPO"/tools/*.py; do run "rm -f '$d/tools/$(basename "$f")'"; done
 }
 uninstall_kiro(){ local d; d="$(kiro_dir "$1")"
   say "$(c '1;36' Kiro) ✗ $d"
-  for s in "$REPO"/kiro/skills/*/;      do run "rm -rf '$d/skills/$(basename "$s")'"; done
+  for s in "$REPO"/skills/*/;           do run "rm -rf '$d/skills/$(basename "$s")'"; done
   for f in "$REPO"/kiro/agents/*.md;    do run "rm -f '$d/agents/$(basename "$f")'"; done
   for f in "$REPO"/kiro/steering/*.md;  do run "rm -f '$d/steering/$(basename "$f")'"; done
   for f in "$REPO"/kiro/hooks/*.kiro.hook; do run "rm -f '$d/hooks/$(basename "$f")'"; done
@@ -89,7 +89,7 @@ uninstall_kiro(){ local d; d="$(kiro_dir "$1")"
 }
 uninstall_codex(){ local scope="$1" h sk; h="$(codex_home)"; sk="$(codex_skills_dir "$scope")"
   say "$(c '1;36' Codex) ✗ $sk"
-  for s in "$REPO"/codex/skills/*/; do run "rm -rf '$sk/$(basename "$s")'"; done
+  for s in "$REPO"/skills/*/; do run "rm -rf '$sk/$(basename "$s")'"; done
   for f in "$REPO"/tools/*.py; do run "rm -f '$h/tools/$(basename "$f")'"; done
   run "rm -f '$h/prompts/'spec-context.md '$h/prompts/'spec-requirements.md '$h/prompts/'spec-stories.md '$h/prompts/'spec-review.md '$h/prompts/'spec-jira.md"  # legacy deprecated prompts
 }
@@ -98,16 +98,16 @@ uninstall_codex(){ local scope="$1" h sk; h="$(codex_home)"; sk="$(codex_skills_
 present(){ [ -e "$1" ] && c '1;32' "✓" || c '2' "·"; }
 list_host(){ case "$1" in
   claude) local d; d="$(claude_dir "$2")"; say "Claude ($2: $d)";
-    for s in "$REPO"/claude-code/skills/*/; do printf '  %s skill %s\n' "$(present "$d/skills/$(basename "$s")")" "$(basename "$s")"; done
-    for f in "$REPO"/claude-code/commands/*.md; do printf '  %s cmd   /%s\n' "$(present "$d/commands/$(basename "$f")")" "$(basename "$f" .md)"; done ;;
+    for s in "$REPO"/skills/*/; do printf '  %s skill %s\n' "$(present "$d/skills/$(basename "$s")")" "$(basename "$s")"; done
+    for f in "$REPO"/commands/*.md; do printf '  %s cmd   /%s\n' "$(present "$d/commands/$(basename "$f")")" "$(basename "$f" .md)"; done ;;
   kiro) local d; d="$(kiro_dir "$2")"; say "Kiro ($2: $d)";
-    for s in "$REPO"/kiro/skills/*/; do printf '  %s skill %s\n' "$(present "$d/skills/$(basename "$s")")" "$(basename "$s")"; done
+    for s in "$REPO"/skills/*/; do printf '  %s skill %s\n' "$(present "$d/skills/$(basename "$s")")" "$(basename "$s")"; done
     for f in "$REPO"/kiro/agents/*.md; do printf '  %s agent %s\n' "$(present "$d/agents/$(basename "$f")")" "$(basename "$f" .md)"; done
     printf '  %s steering #%s\n' "$(present "$d/steering/devloop.md")" "devloop"
     for f in "$REPO"/kiro/hooks/*.kiro.hook; do printf '  %s hook  %s\n' "$(present "$d/hooks/$(basename "$f")")" "$(basename "$f" .kiro.hook)"; done
     printf '  %s settings/mcp.json (MCP example)\n' "$(present "$d/settings/mcp.json")" ;;
   codex) local h sk; h="$(codex_home)"; sk="$(codex_skills_dir "$2")"; say "Codex ($2: skills $sk, tools $h/tools)";
-    for s in "$REPO"/codex/skills/*/; do printf '  %s skill %s\n' "$(present "$sk/$(basename "$s")")" "$(basename "$s")"; done ;;
+    for s in "$REPO"/skills/*/; do printf '  %s skill %s\n' "$(present "$sk/$(basename "$s")")" "$(basename "$s")"; done ;;
 esac; }
 
 # ---- doctor --------------------------------------------------------------------

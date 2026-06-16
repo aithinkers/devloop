@@ -261,53 +261,47 @@ upstream commit reports the changed files.
 
 ## Source of truth & build
 
-To avoid maintaining the same content in three places, DevLoop separates **common content**
-from **tool-specific arrangement**, and a generic engine arranges one into the other:
+All three hosts now read the open **Agent Skill** format (agentskills.io), so DevLoop keeps
+**one** skills library and adds only the thin, genuinely host-specific wrappers around it —
+no per-host skill copies to keep in sync:
 
-- **Common source (edit these):** `core/roles.json` (neutral role definitions — id, title,
-  body, command, description, summary), `core/*.md` (role bodies), `core/shared/*`
-  (templates/guides/examples), and the helper scripts `tools/*.py` (`wikikit.py` +
-  `ingest.py`, one copy each).
-- **Per-tool adapter (edit these):** each tool folder owns an `adapter.json` describing
-  *only* its arrangement — which shared files + scripts each role's skill bundles, which roles
-  also get a subagent, the Kiro steering/hooks/MCP config. `kind` selects the builder.
-- **Authored, tool-specific (edit these):** `claude-code/.claude-plugin/plugin.json`,
-  `.claude-plugin/marketplace.json`, `kiro/README.md`, `codex/AGENTS.md`.
-- **Generated (never edit by hand):** `claude-code/skills|commands|agents`, `codex/skills`,
-  `kiro/skills|agents|steering|hooks|settings`, and the per-tool copies of `tools/*.py`
-  (`wikikit.py` + `ingest.py`).
+- **Source (edit these):** `core/roles.json` (role identity + which `shared/` templates and
+  `tools/` scripts each skill bundles + `subagent` flag), `core/0X-*.md` (role bodies),
+  `core/shared/*` (templates/guides/examples), `tools/*.py` (`wikikit.py` + `ingest.py`).
+- **Authored (edit these):** `.claude-plugin/{plugin.json, marketplace.json}` (the Claude
+  plugin = the repo root), `kiro/adapter.json` (Kiro subagent tools + steering/hooks/MCP),
+  `kiro/README.md`, `codex/AGENTS.md` (Codex's gated-chain orchestrator). `plugin.json`'s
+  `version` is **stamped from `VERSION`** by the build (it can't drift).
+- **Generated (never edit by hand):** the one `skills/` library, Claude's root
+  `commands/` + `agents/` wrappers, and `kiro/{agents,steering,hooks,settings}`.
 
 ```bash
-./build.sh          # read core/roles.json + each <tool>/adapter.json → generate the packages
-./build.sh --check  # fail if the generated folders are stale (used by the smoke test)
+./build.sh          # core/ + tools/ → one skills/ library + host wrappers
+./build.sh --check  # fail if the generated tree or plugin.json version is stale (CI + smoke test)
 ```
 
-`build/build.py` is a generic engine: it loads the common source, discovers every
-`<tool>/adapter.json`, and dispatches to a small builder per `kind`. So a content change is
-made **once** in `core/`; tool-specific arrangement lives **with the tool**; and
-**adding a new tool is just a new folder with an `adapter.json`** (plus a ~15-line builder
-if its packaging shape is genuinely new). The generated folders can't drift — the smoke test
-fails if they do. All three hosts now share one **Agent Skill** packaging (agentskills.io):
-Claude bundles them under `skills/` (plus thin commands + subagents); Kiro (0.9+) reuses the
-same skills plus subagents, a lean auto-steering orchestrator, and hooks; Codex installs them to
-`.agents/skills/` with `AGENTS.md` as the orchestrator (its custom prompts are deprecated). The
-skill bodies are byte-identical across hosts — the smoke test enforces it.
+`build/build.py` generates the canonical `skills/<role>/` **once**, then layers each host's
+wrappers on top: **Claude** uses the root `skills/` in place (plugin root = repo root) plus
+thin slash-command + subagent wrappers; **Kiro** (0.9+) gets subagents, a lean
+`inclusion: auto` steering orchestrator, hooks, and a disabled MCP example — its `skills/`
+come from the same root library at install time; **Codex** gets `AGENTS.md` as the orchestrator
+and the same skills (custom prompts are deprecated). Because there's a single skills tree,
+the bodies *can't* fork — and the smoke test still asserts it. The CLI copies the root
+`skills/` and `tools/` into each host's location on install.
 
 ```
 devloop/
-├── build.sh / build/build.py   # generic engine (common + adapters → packages) + --check
-├── install.sh
-├── core/
-│   ├── roles.json              # ← SOURCE: neutral role definitions (common)
-│   ├── 0X-*.md                 # ← SOURCE: role bodies
-│   └── shared/                 # ← SOURCE: templates, guides, example configs
-├── tools/                      # ← SOURCE: deterministic helpers — wikikit.py (registry/sync/jira/lint) + ingest.py (multi-format extract)
+├── build/build.py              # generator: one skills/ library + host wrappers (+ --check)
+├── devloop / install.sh        # CLI + curl bootstrap
+├── core/{roles.json, 0X-*.md, shared/}   # ← SOURCE: roles, bodies, templates
+├── tools/{wikikit,ingest}.py             # ← SOURCE: deterministic helpers
+├── skills/<role>/              # ← GENERATED: the one canonical Agent Skill library
+├── commands/ · agents/         # ← GENERATED: Claude slash-command + subagent wrappers
+├── .claude-plugin/{plugin.json, marketplace.json}   # Claude plugin (root = the plugin)
+├── kiro/   adapter.json + README (authored)  → agents/steering/hooks/settings (generated)
+├── codex/  AGENTS.md (authored; skills come from root at install)
 ├── examples/                   # sample sources for trying a single wiki
-├── test/smoke_test.sh          # 44-check smoke test (incl. build freshness, host parity, installed-helper runnability + Kiro 0.9 layout)
-├── claude-code/  adapter.json + .claude-plugin/plugin.json (authored) → skills/commands/agents (generated)
-├── kiro/         adapter.json + README (authored)                     → skills/agents/steering/hooks (generated)
-├── codex/        adapter.json + AGENTS.md (authored)                  → skills/ (generated)
-└── .claude-plugin/marketplace.json
+└── test/smoke_test.sh          # 44-check smoke test (build freshness, single-source skills, all-host install/QA)
 ```
 
 ## License
