@@ -1,310 +1,144 @@
 # DevLoop
 
-A small, opinionated **role chain for business analysis** — inspired by Garry Tan's
-[gstack](https://github.com/) (role-based skills) and obra's
-[Superpowers](https://github.com/obra/superpowers) (a methodology that gates each phase on
-the previous one). DevLoop takes a vague feature idea and walks it through five roles to a
-review-ready backlog — grounded in a library of LLM-Wikis built from your existing company
-knowledge:
+DevLoop gives your coding agent a disciplined **business-analyst workflow**: it turns a vague
+feature idea into a review-ready backlog — requirements, user stories, a quality review, and a
+Jira plan — all **grounded in your company's existing knowledge**.
 
 ```
-Context Librarian  →  Requirements Analyst  →  Story Writer    →  Story Reviewer    →  Jira Organizer
-(compile a wiki       (grounded interview)      (epics+stories)    (INVEST/DoR)         (epics/components/labels)
- library)             requirements.md           stories.md         story-review.md      jira-plan.md
+Context Librarian  →  Requirements Analyst  →  Story Writer  →  Story Reviewer  →  Jira Organizer
+(compile a wiki        (grounded interview)     (epics+stories)   (INVEST/DoR)       (epics/components/labels)
+ library)              requirements.md          stories.md        story-review.md    jira-plan.md
 ```
 
-It installs into **Claude Code**, **Kiro**, and **Codex** from one source.
+It installs into **Claude Code**, **Kiro**, and **Codex** from one source — as auto-triggering
+Agent Skills, so you don't invoke anything special; the right role activates when you need it.
+Inspired by Garry Tan's [gstack](https://github.com/) (role-based skills) and obra's
+[Superpowers](https://github.com/obra/superpowers) (gate each phase on the last).
 
-> **Status / roadmap.** Today DevLoop covers the front of the loop — grounding, requirements,
-> stories, and Jira organization (the five roles below). The back half — agents that pick up
-> ready stories, implement them, open PRs, review each PR against its story's acceptance
-> criteria, merge, and sync Jira — is the planned next phase (it will orchestrate and delegate
-> to coding agents rather than reinvent them). That's the "loop" the name points at.
+> **Status.** DevLoop covers the *front* of the loop today — grounding → requirements →
+> stories → Jira plan. The back half (agents that pick up ready stories, implement, open/review
+> PRs, merge, sync Jira) is the planned next phase. That's the "loop" the name points at.
 
-## The five roles
+## Quickstart
 
-| Role | Command | Produces |
-|---|---|---|
-| **Context Librarian** | `/spec-context` | a library of LLM-Wikis (project, integrations, devops, codebase…) compiled from docs, meeting minutes, processes, integration specs, code repos, wikis, SharePoint, URLs |
-| **Requirements Analyst** | `/spec-requirements` | `requirements.md` — numbered FR/NFR (each tagged with wiki + source refs), personas, scope, risks, acceptance |
-| **Story Writer** | `/spec-stories` | `stories.md` — epics → INVEST user stories → Gherkin AC + traceability + component/label tags |
-| **Story Reviewer** | `/spec-review` | `story-review.md` — INVEST/DoR/coverage findings + prioritized fixes |
-| **Jira Organizer** | `/spec-jira` | `jira-plan.md` + `devloop.jira.json` — recommends the Jira org (BA vs TECH projects, issue types, Components from wikis, labels) and captures the real setup in config (guidance only) |
-
-Each phase gates the next. The **Context Librarian** runs first — and instead of a flat
-document it **compiles** your sources into interlinked knowledge wikis (Andrej Karpathy's
-[LLM Wiki](https://karpathy.ai/llmwiki) pattern; see also
-[nashsu/llm_wiki](https://github.com/nashsu/llm_wiki) and
-[obsidian-llm-wiki-local](https://github.com/kytmanov/obsidian-llm-wiki-local)). The
-**Requirements Analyst** then runs in *grounded mode* — it reads the primary project wiki,
-pulls in the referenced shared wikis (integrations/devops/codebase) as needed, only asks
-about gaps, and tags each requirement with the concept article + source IDs that back it.
-The Story Writer traces every story to a requirement and tags components; the **Jira
-Organizer** turns the backlog into an organization plan.
-
-## A library of wikis (not just one)
-
-Different knowledge belongs in different wikis, and several are shared across projects and
-live in their own git repos. A registry `devloop.wikis.json` lists them; git-backed wikis
-are cloned into `.devloop/wikis/<id>` and refreshed on demand. Built-in `kind` profiles
-shape what each wiki extracts:
-
-| kind | source | concepts extracted |
-|---|---|---|
-| `project` | this repo (local) | as-is processes, decisions (from minutes), product features, glossary |
-| `integrations` | shared git repo | SSO, APIs, Email, FTP/SFTP, webhooks (one article each) |
-| `devops` | shared git repo | pipelines, environments, deploy/release/incident, observability |
-| `codebase` | a code git repo | services/modules, APIs/endpoints, data models, config, dependencies |
-
-Concepts link within a wiki via `[[Concept]]` and **across** wikis via a namespace:
-`[[integrations:SSO]]`, `[[codebase:AuthService]]`, `[[devops:Release Pipeline]]`. Jira
-**Components** are derived from the `codebase`/`integrations` wikis. To refresh everything:
-`wikikit.py sync --all`, recompile what changed, then `lint --all`.
-
-### Inside a single wiki
-
-Raw documents force every later question to re-discover knowledge from scratch. A compiled
-wiki synthesizes once and stays current: concepts are deduplicated, connections are
-explicit via `[[wikilinks]]`, and every claim traces to its source in YAML frontmatter.
-There's no vector store — `index.md` is the routing layer.
-
-```
-knowledge/
-├── raw/                  # normalized source copies (immutable)
-├── wiki/
-│   ├── index.md          # navigation + routing map, grouped by concept type
-│   ├── concepts/         # one article per concept, linked via [[wikilinks]]
-│   ├── sources/          # one summary page per source
-│   └── glossary.md
-├── sources/INDEX.md      # source manifest (S-IDs)
-└── .wiki-state.json      # SHA256 cache → incremental recompile
-```
-
-The **host agent is the compiler** (Claude Code / Codex / Kiro) — no Ollama or API keys
-needed — so the wiki builds wherever DevLoop runs. A pipeline of *ingest* (read source →
-extract concepts) then *compile* (per concept → article with links) keeps it incremental:
-unchanged sources are skipped via the SHA256 cache.
-
-**Sources:** point a wiki at a whole documentation folder and run `tools/ingest.py SOURCES
---wiki <id>` — it walks **every subfolder** and extracts text, no third-party deps:
-markdown/text/csv/json/yaml/html copied or de-tagged; **`.docx`/`.pptx`/`.xlsx`**,
-**`.drawio`** (compressed or not), **`.vsdx` (Visio)**, and `.svg` parsed via zip+XML; `.pdf`
-via `pdftotext`/`pypdf` if present. Scanned PDFs and raster images are **flagged** in
-`raw/_INGEST.md` so the agent reads them with vision/OCR instead. SharePoint comes in via a
-Microsoft MCP connector where the tool supports it, or via synced files / direct URLs.
-
-### `tools/wikikit.py` — the deterministic helper
-
-The LLM does the thinking; `wikikit.py` (pure-stdlib Python, no LLM) does the bookkeeping —
-managing the registry, syncing git-backed wikis, change detection, and link-linting.
-
-> **How the helpers run.** `wikikit.py`/`ingest.py` are not put on your `PATH`. During normal
-> use the **host agent runs them for you** from where the installer placed them
-> (`~/.claude/tools/`, `~/.kiro/tools/`, `$CODEX_HOME/tools/` — the skills carry the
-> path). To run them yourself, either invoke the installed copy
-> (`python3 ~/.claude/tools/wikikit.py …`) or, from a clone of this repo, `python3
-> tools/wikikit.py …`. The commands below are written bare for brevity — prefix with
-> `python3 <path>/` when you run them directly.
-
-```
-wikikit.py registry init             # create devloop.wikis.json (the wiki library)
-wikikit.py registry list             # show wikis + last-synced commit
-wikikit.py sync <id> | --all         # git: clone/pull (fails non-zero on git error); local/url: report status + next step
-wikikit.py scaffold --wiki <id>      # create a wiki's knowledge/ structure
-wikikit.py status   --wiki <id>      # new / changed / unchanged raw sources (SHA256)
-wikikit.py commit   --wiki <id>      # record source hashes after compiling
-wikikit.py lint     --wiki <id>      # broken [[links]] / orphans (Obsidian-style resolution)
-wikikit.py lint     --all            # validate cross-wiki [[namespace:Concept]] links
-wikikit.py jira init                 # scaffold devloop.jira.json (BA + TECH projects)
-wikikit.py jira validate             # validate the Jira config (routing/types/components)
-```
-
-(`scaffold/status/commit/lint` also accept a positional `DIR` instead of `--wiki` for a
-standalone single wiki.)
-
-## Jira: organization + config
-
-The Jira Organizer gives you two things:
-
-**1. How to organize Jira for the project.** It recommends splitting a **BA** project
-(discovery: `Initiative`, `Requirement`, `Decision`, Epic) from a **TECH** project
-(delivery: `Epic`, `Story`, `Task`, `Bug`, `Sub-task`) — so requirements and decisions are
-tracked as first-class issues, separate from the delivery board. It derives the **Component**
-list from your codebase/integration wikis, proposes a label taxonomy, and maps fields
-(priority from MoSCoW, story points, epic link) and the issue hierarchy.
-
-**2. A config that drives concrete mappings.** Once Jira is set up, capture the real
-structure in `devloop.jira.json` (`wikikit.py jira init` → edit → `wikikit.py jira
-validate`): projects, enabled issue types, `routing` of each artifact kind → (project,
-type), components (linked to their wiki concept), labels, and the priority map. **When this
-config exists, the Story Writer stops emitting generic tags and suggests a concrete per-story
-mapping** — target project, issue type, component, labels, priority, epic link — all
-conforming to your config, with a *Jira mapping* table in `stories.md`. `wikikit.py jira
-validate` catches misroutes (a type not enabled in its project, an unknown component
-project, a non-MoSCoW priority key) before you build anything in Jira.
-
-This stays guidance + config only — no import file and no live Jira changes. (A connector
-push could be added later if you want it.)
-
-## Install
-
-DevLoop is dependency-light — just `bash`, `python3`, and `git`. Three ways in:
-
-**One-liner (curl bootstrap).** Clones the repo into `~/.devloop` and runs the CLI:
+Dependency-light — just `bash`, `python3`, and `git`.
 
 ```bash
+# One-liner (clones into ~/.devloop and runs the installer):
 curl -fsSL https://raw.githubusercontent.com/aithinkers/devloop/main/install.sh | sh
-# pick a host / scope:
-curl -fsSL .../install.sh | sh -s -- --host claude --scope home
-```
 
-**Clone + CLI.** If you've cloned the repo:
-
-```bash
-./devloop install                         # all hosts, into the current project (./.claude, …)
+# …or from a clone:
+./devloop install                       # all hosts, into ./ (project scope)
 ./devloop install --host claude --scope home
-./devloop install --dry-run               # show what would happen
-./devloop list        # what's installed   ./devloop uninstall   # clean removal
-./devloop doctor      # deps + build freshness + install status
+./devloop list   ./devloop uninstall   ./devloop doctor
 ```
 
-`--host claude|kiro|codex|all` (default `all`) · `--scope project|home` (default `project`).
-
-**Claude Code plugin marketplace.** For Claude-Code-only users:
+`--host claude|kiro|codex|all` · `--scope project|home`. **Claude Code** users can also install
+from the plugin marketplace:
 
 ```
 /plugin marketplace add aithinkers/devloop
 /plugin install devloop
 ```
 
-### What lands where
+Then just describe a feature and let the chain run — or call a phase directly with `/spec-context`,
+`/spec-requirements`, `/spec-stories`, `/spec-review`, `/spec-jira`.
 
-- **Claude Code** — `skills/` (auto-triggering), `commands/` (slash commands), the
-  `context-librarian`/`requirements-analyst` subagents, and the helper tools
-  (`tools/wikikit.py` + `tools/ingest.py`). Project scope → `./.claude/`, home scope →
-  `~/.claude/`. (Every host gets both helpers in its `tools/`.)
-- **Kiro** (0.9+) — `skills/<role>/SKILL.md` (auto-triggering Agent Skills, same packages as
-  Claude), `agents/` subagents (context-librarian, requirements-analyst), a lean
-  `steering/devloop.md` (`inclusion: auto`) orchestrator, `hooks/` (manual lint/sync), the
-  helper tools, and a disabled `settings/mcp.json` SharePoint example (seeded only if absent —
-  never clobbers your MCP config). Project scope → `./.kiro/`, home scope → `~/.kiro/`.
-- **Codex** — Agent Skills (same packages as Claude) into `.agents/skills/` (home → `$HOME`,
-  project → the repo), the helper tools in `$CODEX_HOME/tools`, and `AGENTS.md` (the gated-chain
-  orchestrator) into `$CODEX_HOME` (home) or the repo (project), only if absent. Codex custom
-  prompts are deprecated, so DevLoop ships skills; wire SharePoint/MCP in `config.toml`
-  (`[mcp_servers]`) per `AGENTS.md`.
+## How it works
 
-## Usage
+When you ask to build something, DevLoop *doesn't* jump to stories. It steps back through five
+**gated** roles — each one finishes (and you sign off) before the next begins:
 
-0. `/spec-context` — define your wikis in `devloop.wikis.json` (`wikikit.py registry init`),
-   then bring in their sources by type: **git** repos are fetched automatically by `sync`;
-   **local** folders are pulled in with `ingest.py SOURCES --wiki <id>` (then tracked by
-   `status`/`commit`); **URL** sources are fetched or pasted in by you/the agent. The
-   librarian then compiles the wiki library. (Skip if you have no source material.)
-1. `/spec-requirements <one-line feature idea>` — it navigates the wikis, only asks about
-   gaps; answer with A/B/C and approve the draft.
-2. `/spec-stories` — get epics, user stories, Gherkin acceptance criteria, and component tags.
-3. `/spec-review` — independent INVEST / Definition-of-Ready quality pass.
-4. `/spec-jira` — a Jira organization plan: epics, components (from the wikis), labels, fields.
+1. **Context Librarian** (`/spec-context`) — asks where your knowledge lives (docs, meeting
+   minutes, SharePoint, wikis, repos, URLs) and **compiles it into a library of LLM-Wikis** you
+   can trust. Run this first when you have source material.
+2. **Requirements Analyst** (`/spec-requirements`) — reads the wikis, then interviews you
+   Socratically, **one question at a time**, only about the gaps. Produces `requirements.md`
+   (numbered FR/NFR, each traced to its source).
+3. **Story Writer** (`/spec-stories`) — turns approved requirements into epics + INVEST user
+   stories with Gherkin acceptance criteria and a traceability matrix → `stories.md`.
+4. **Story Reviewer** (`/spec-review`) — an independent pass for INVEST, Definition of Ready,
+   coverage, and AC quality → `story-review.md`.
+5. **Jira Organizer** (`/spec-jira`) — recommends how to organize Jira and writes a
+   `jira-plan.md`. Guidance + config only — no live Jira changes.
 
-To **refresh** later: `wikikit.py sync --all`, recompile the wikis it reports as changed,
-then re-run from step 1.
+Because the skills auto-trigger, the agent picks the right role for what you're doing.
 
-### Building one wiki at a time
+## Grounded in your knowledge (a library of LLM-Wikis)
 
-Every `wikikit.py` op is per-wiki, so you can build/refresh wikis individually:
+Requirements are only as good as what they're based on. So before eliciting anything, the
+Context Librarian **compiles** your scattered sources into interlinked knowledge wikis (Andrej
+Karpathy's [LLM Wiki](https://karpathy.ai/llmwiki) pattern) — concepts are de-duplicated, linked
+with `[[wikilinks]]`, and every claim traces to its source. There's no vector store; an
+`index.md` is the routing layer.
 
-```bash
-wikikit.py sync integrations           # refresh just this wiki's source
-wikikit.py scaffold --wiki integrations
-wikikit.py status   --wiki integrations    # what changed in this wiki only
-# ... run /spec-context (the agent compiles concept articles for this wiki) ...
-wikikit.py lint     --wiki integrations
-wikikit.py commit   --wiki integrations
-```
+Different knowledge lives in different wikis, several shared across projects in their own git
+repos. A registry (`devloop.wikis.json`) lists them, and built-in `kind` profiles shape what each
+extracts:
 
-`lint --all` is the only cross-wiki step. The Context Librarian compiles each wiki with its
-own `kind` profile, so wikis are fully independent.
+| kind | source | extracts |
+|---|---|---|
+| `project` | this repo (local) | as-is processes, decisions, product features, glossary |
+| `integrations` | shared git repo | SSO, APIs, Email, FTP/SFTP, webhooks |
+| `devops` | shared git repo | pipelines, environments, deploy/release, observability |
+| `codebase` | a code git repo | services, APIs/endpoints, data models, config, deps |
+
+Concepts link within a wiki via `[[Concept]]` and **across** wikis via a namespace
+(`[[integrations:SSO]]`). Point a wiki at a folder of mixed docs and `ingest.py` walks every
+subfolder, extracting text from markdown, `.docx/.pptx/.xlsx`, `.drawio`, `.vsdx`, `.svg`, and
+PDFs (scanned files/images are flagged for the agent to read with vision). SharePoint comes in
+via an MCP connector (see the per-host notes) or synced files.
+
+## Jira: a plan, plus optional config
+
+The Jira Organizer recommends splitting a **BA** project (`Initiative`, `Requirement`,
+`Decision`) from a **TECH** delivery project (`Epic`, `Story`, `Task`, `Bug`), derives
+**Components** from your wikis, and proposes labels + field mappings. If you capture your real
+setup in `devloop.jira.json`, the Story Writer then suggests a **concrete per-story mapping**
+(project, type, component, labels, priority) that conforms to it — and `wikikit.py jira validate`
+catches misroutes before you build anything. Guidance + config only; no import file.
+
+## The helpers
+
+The LLM does the thinking; two pure-stdlib scripts (installed into each host, and run by the
+agent for you) do the deterministic bookkeeping:
+
+- **`wikikit.py`** — manage the wiki registry, `sync` git-backed wikis, detect changed sources
+  (SHA256), lint `[[links]]` (incl. cross-wiki), and scaffold/validate the Jira config.
+- **`ingest.py`** — recursive, multi-format folder ingest into a wiki's `raw/` (no third-party deps).
+
+## Per-host notes
+
+All three hosts get the **same Agent Skills** (the `skills/` library). Each adds its own idioms:
+
+- **Claude Code** — skills + thin `/spec-*` commands + `context-librarian`/`requirements-analyst`
+  subagents. Installs to `./.claude/` or `~/.claude/`.
+- **Kiro** (0.9+) — skills + subagents + a lean `inclusion: auto` steering orchestrator + manual
+  lint/sync **hooks** + a disabled SharePoint **MCP** example (`.kiro/settings/mcp.json`, seeded
+  only if absent). See [kiro/README.md](kiro/README.md).
+- **Codex** — skills into `.agents/skills/` + `AGENTS.md` as the gated-chain orchestrator (Codex
+  custom prompts are deprecated). Wire SharePoint via `config.toml` `[mcp_servers]`; see
+  [codex/AGENTS.md](codex/AGENTS.md).
 
 ## Testing
 
-**Automated smoke test** (no LLM, no network — proves the single-wiki plumbing):
-
 ```bash
-bash test/smoke_test.sh
+bash test/smoke_test.sh    # 44 checks, no LLM, no network
 ```
 
-It covers, end to end: registry + single-wiki scaffold, change-detection, the compile step,
-lint and the incremental cache, a **git-backed** wiki (clone + upstream-change detection,
-using a throwaway local repo — no network), **cross-wiki** `[[namespace:Concept]]` lint,
-**Jira config** validation (clean config passes, a misrouted one is caught), a **build
-freshness** check (the generated platform folders match `core/`), **cross-host install**
-(both helper tools land in every host's `tools/` and are removed on uninstall), the
-`ingest.py --wiki` registry-resolved path, the per-host **Agent Skill** layouts (Claude
-plugin + commands/subagents, Kiro 0.9 skills/subagents/steering/hooks/MCP, Codex
-`.agents/skills` + AGENTS.md), and that **skill bodies are byte-identical across all three
-hosts**.
-Expect `44 passed, 0 failed` (one stage self-skips if `git` isn't installed).
+End to end: registry + scaffold, change-detection, the compile step, lint + incremental cache, a
+git-backed wiki, cross-wiki lint, Jira validation, build freshness, single-source skills, and
+all-host install/uninstall. Expect `44 passed, 0 failed`.
 
-**Manual single-wiki test in your tool.** Install (`./devloop install --host claude`), then in a scratch
-project run `python3 ~/.claude/tools/wikikit.py registry init` (or `python3 tools/wikikit.py …`
-from a clone), edit `devloop.wikis.json` down to one local wiki pointing at
-`examples/integrations-src/` (or your own docs), ingest it with `python3
-~/.claude/tools/ingest.py examples/integrations-src --wiki <id>`, and run `/spec-context` — the agent should produce `knowledge/wiki/concepts/`
-articles (SSO, Email, SFTP) with `[[wikilinks]]` and an `index.md`. Then `/spec-requirements`
-to confirm it reads the wiki and only asks about gaps. See `examples/README.md` for the
-exact steps.
+## How it's built
 
-**Git-backed wiki test.** Point a wiki's `source` at any git repo URL and run
-`wikikit.py sync <id>` — it clones into `.devloop/wikis/<id>`, and a second `sync` after an
-upstream commit reports the changed files.
-
-## Source of truth & build
-
-All three hosts now read the open **Agent Skill** format (agentskills.io), so DevLoop keeps
-**one** skills library and adds only the thin, genuinely host-specific wrappers around it —
-no per-host skill copies to keep in sync:
-
-- **Source (edit these):** `core/roles.json` (role identity + which `shared/` templates and
-  `tools/` scripts each skill bundles + `subagent` flag), `core/0X-*.md` (role bodies),
-  `core/shared/*` (templates/guides/examples), `tools/*.py` (`wikikit.py` + `ingest.py`).
-- **Authored (edit these):** `.claude-plugin/{plugin.json, marketplace.json}` (the Claude
-  plugin = the repo root), `kiro/adapter.json` (Kiro subagent tools + steering/hooks/MCP),
-  `kiro/README.md`, `codex/AGENTS.md` (Codex's gated-chain orchestrator). `plugin.json`'s
-  `version` is **stamped from `VERSION`** by the build (it can't drift).
-- **Generated (never edit by hand):** the one `skills/` library, Claude's root
-  `commands/` + `agents/` wrappers, and `kiro/{agents,steering,hooks,settings}`.
-
-```bash
-./build.sh          # core/ + tools/ → one skills/ library + host wrappers
-./build.sh --check  # fail if the generated tree or plugin.json version is stale (CI + smoke test)
-```
-
-`build/build.py` generates the canonical `skills/<role>/` **once**, then layers each host's
-wrappers on top: **Claude** uses the root `skills/` in place (plugin root = repo root) plus
-thin slash-command + subagent wrappers; **Kiro** (0.9+) gets subagents, a lean
-`inclusion: auto` steering orchestrator, hooks, and a disabled MCP example — its `skills/`
-come from the same root library at install time; **Codex** gets `AGENTS.md` as the orchestrator
-and the same skills (custom prompts are deprecated). Because there's a single skills tree,
-the bodies *can't* fork — and the smoke test still asserts it. The CLI copies the root
-`skills/` and `tools/` into each host's location on install.
-
-```
-devloop/
-├── build/build.py              # generator: one skills/ library + host wrappers (+ --check)
-├── devloop / install.sh        # CLI + curl bootstrap
-├── core/{roles.json, 0X-*.md, shared/}   # ← SOURCE: roles, bodies, templates
-├── tools/{wikikit,ingest}.py             # ← SOURCE: deterministic helpers
-├── skills/<role>/              # ← GENERATED: the one canonical Agent Skill library
-├── commands/ · agents/         # ← GENERATED: Claude slash-command + subagent wrappers
-├── .claude-plugin/{plugin.json, marketplace.json}   # Claude plugin (root = the plugin)
-├── kiro/   adapter.json + README (authored)  → agents/steering/hooks/settings (generated)
-├── codex/  AGENTS.md (authored; skills come from root at install)
-├── examples/                   # sample sources for trying a single wiki
-└── test/smoke_test.sh          # 44-check smoke test (build freshness, single-source skills, all-host install/QA)
-```
+All three hosts read the open [agentskills.io](https://agentskills.io) Agent Skill format, so
+DevLoop keeps **one** `skills/` library (generated from `core/`) and layers only thin
+host-specific wrappers on top — Claude's commands/subagents, Kiro's steering/hooks/MCP, Codex's
+`AGENTS.md`. A content change is made once; `./devloop build --check` fails if anything drifts.
+Details for contributors: [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
-MIT — see [LICENSE](LICENSE). Contributions welcome; see [CONTRIBUTING.md](CONTRIBUTING.md)
-and [CHANGELOG.md](CHANGELOG.md).
+MIT — see [LICENSE](LICENSE). Contributions welcome ([CONTRIBUTING.md](CONTRIBUTING.md),
+[CHANGELOG.md](CHANGELOG.md)).
