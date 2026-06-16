@@ -291,6 +291,45 @@ done
 [ "$diffs" = 0 ] && ok "Kiro & Claude skill SKILL.md bodies match (no content fork)" || no "$diffs skill body mismatch(es)"
 cd "$TMP"
 
+echo "[12h] Claude plugin manifest: version tracks VERSION, no redundant path keys, has metadata"
+VER="$(cat "$HERE/VERSION")"
+if python3 - "$HERE" "$VER" <<'PY'
+import json,sys
+repo,ver=sys.argv[1],sys.argv[2]
+pj=json.load(open(f"{repo}/claude-code/.claude-plugin/plugin.json"))
+assert pj.get("name")=="devloop"
+assert pj.get("version")==ver, (pj.get("version"),ver)            # stamped, not drifting
+for k in ("commands","skills","agents"): assert k not in pj, k    # rely on auto-discovery
+for k in ("license","homepage","repository"): assert k in pj, k
+mk=json.load(open(f"{repo}/.claude-plugin/marketplace.json"))
+assert mk["owner"]["name"]
+for pl in mk["plugins"]:
+    assert pl["name"] and pl["source"]
+PY
+then ok "plugin.json stamped to $VER, clean manifest + marketplace valid"; else no "plugin/marketplace manifest invalid"; fi
+cd "$TMP"
+
+echo "[12i] build --check fails when plugin.json version drifts from VERSION (then restamps)"
+python3 - "$HERE" <<'PY'
+import json,sys; p=f"{sys.argv[1]}/claude-code/.claude-plugin/plugin.json"
+d=json.load(open(p)); d["version"]="0.0.0-drift"; json.dump(d,open(p,"w"),indent=2); open(p,"a").write("\n")
+PY
+if python3 "$HERE/build/build.py" --check >/dev/null 2>&1; then no "build --check missed plugin.json version drift"; else ok "build --check catches plugin.json version drift"; fi
+python3 "$HERE/build/build.py" >/dev/null 2>&1   # restamp from VERSION → clean
+python3 "$HERE/build/build.py" --check >/dev/null 2>&1 && ok "rebuild restamps plugin.json clean" || no "restamp failed"
+cd "$TMP"
+
+echo "[12j] Claude commands carry argument-hint; subagents preload their skill"
+ch_ok=1
+for c in "$HERE"/claude-code/commands/*.md; do grep -q '^argument-hint:' "$c" && grep -q '^description:' "$c" || ch_ok=0; done
+[ "$ch_ok" = 1 ] && ok "every command has description + argument-hint" || no "command frontmatter incomplete"
+ag_ok=1
+for a in "$HERE"/claude-code/agents/*.md; do id="$(basename "$a" .md)"
+  grep -q "^skills: \[$id\]$" "$a" && grep -q "Follow the method in the \`$id\` skill" "$a" || ag_ok=0
+done
+[ "$ag_ok" = 1 ] && ok "every subagent preloads + points at its skill" || no "subagent skill wiring incomplete"
+cd "$TMP"
+
 echo "[13] ingest.py: recursive multi-format extraction (docx + drawio + nested md; image flagged)"
 IG="$TMP/ig"; SRCD="$IG/sources"; mkdir -p "$SRCD/sub"
 printf '# SOP\nStep one.\n' > "$SRCD/sub/sop.md"

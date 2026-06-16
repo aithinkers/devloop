@@ -240,7 +240,7 @@ freshness** check (the generated platform folders match `core/`), **cross-host i
 (both helper tools land in every host's `tools/` and are removed on uninstall), the
 `ingest.py --wiki` registry-resolved path, and a **Codex self-containment** invariant
 (every `shared/<file>` a role body cites is inlined into the prompt).
-Expect `36 passed, 0 failed` (one stage self-skips if `git` isn't installed).
+Expect `41 passed, 0 failed` (one stage self-skips if `git` isn't installed).
 
 **Manual single-wiki test in your tool.** Install (`./devloop install --host claude`), then in a scratch
 project run `python3 ~/.claude/tools/wikikit.py registry init` (or `python3 tools/wikikit.py …`
@@ -297,7 +297,7 @@ devloop/
 │   └── shared/                 # ← SOURCE: templates, guides, example configs
 ├── tools/                      # ← SOURCE: deterministic helpers — wikikit.py (registry/sync/jira/lint) + ingest.py (multi-format extract)
 ├── examples/                   # sample sources for trying a single wiki
-├── test/smoke_test.sh          # 36-check smoke test (incl. build freshness, host parity, installed-helper runnability + Kiro 0.9 layout)
+├── test/smoke_test.sh          # 41-check smoke test (incl. build freshness, host parity, installed-helper runnability + Kiro 0.9 layout)
 ├── claude-code/  adapter.json + .claude-plugin/plugin.json (authored) → skills/commands/agents (generated)
 ├── kiro/         adapter.json + README (authored)                     → skills/agents/steering/hooks (generated)
 ├── codex/        adapter.json + AGENTS.md (authored)                  → prompts/ (generated)

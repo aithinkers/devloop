@@ -23,6 +23,7 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CORE = os.path.join(REPO, "core")
 SHARED = os.path.join(CORE, "shared")
 WIKIKIT = os.path.join(REPO, "tools", "wikikit.py")
+PLUGIN_JSON = os.path.join(REPO, "claude-code", ".claude-plugin", "plugin.json")
 
 # Everything under these prefixes is owned by the generator (cleaned + rewritten).
 GEN_PREFIXES = [
@@ -72,13 +73,14 @@ def build_claude(tooldir, adapter, roles, order, tools, out):
             continue
         emit_skill(tooldir, rid, r, cfg, tools, out)
         out[f"{tooldir}/commands/{r['command']}.md"] = (
-            f"---\ndescription: {r['title']} — see the {rid} skill\n---\n"
+            f"---\ndescription: {r['title']} — see the {rid} skill\n"
+            f"argument-hint: \"[optional: a one-line feature idea or context]\"\n---\n"
             f"Adopt the **{r['title']}** role defined in the `{rid}` skill. {r['summary']}\n\n"
-            f"Arguments (optional): $ARGUMENTS\n").encode()
+            f"If any arguments were provided, treat them as the starting context: $ARGUMENTS\n").encode()
         if cfg.get("subagent"):
             out[f"{tooldir}/agents/{rid}.md"] = (
                 f"---\nname: {rid}\ndescription: {r['description']}\n"
-                f"tools: {cfg['subagent_tools']}\n---\n"
+                f"tools: {cfg['subagent_tools']}\nskills: [{rid}]\n---\n"
                 f"You are the **{r['title']}**. Follow the method in the `{rid}` skill "
                 f"(do not restate it). {r['summary']}\n").encode()
 
@@ -161,6 +163,20 @@ def load_tools():
     d = os.path.join(REPO, "tools")
     return {f: rd(os.path.join(d, f)) for f in sorted(os.listdir(d)) if f.endswith(".py")}
 
+def stamp_plugin_version(write):
+    """Keep the Claude plugin manifest's `version` in lockstep with the VERSION file (it would
+    otherwise be a hand-maintained duplicate that drifts). Returns the expected version if
+    plugin.json is stale, else None."""
+    v = open(os.path.join(REPO, "VERSION")).read().strip()
+    data = json.load(open(PLUGIN_JSON))
+    if data.get("version") == v:
+        return None
+    if write:
+        data["version"] = v
+        with open(PLUGIN_JSON, "w") as f:
+            json.dump(data, f, indent=2); f.write("\n")
+    return v
+
 def plan():
     roles, order = load_roles()
     tools = load_tools()
@@ -189,6 +205,8 @@ def write_all():
         os.makedirs(os.path.dirname(dst), exist_ok=True)
         with open(dst, "wb") as f:
             f.write(data)
+    if stamp_plugin_version(write=True):
+        print("  stamped plugin.json version from VERSION")
     print(f"✓ generated {len(p)} files from core/ + tools/ + adapters")
 
 def check():
@@ -202,6 +220,9 @@ def check():
             drift.append(f"stale (not in source): {rel}")
         elif rd(os.path.join(REPO, rel)) != p[rel]:
             drift.append(f"out of date: {rel}")
+    stale_v = stamp_plugin_version(write=False)
+    if stale_v:
+        drift.append(f"plugin.json version != VERSION ({stale_v}) — run ./build.sh")
     if drift:
         print("Generated tree is STALE — run ./build.sh:")
         for d in drift:

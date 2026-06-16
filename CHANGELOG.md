@@ -2,6 +2,21 @@
 
 All notable changes to DevLoop are documented here. Versioning is semantic.
 
+## [0.9.2]
+Claude Code QA (validated against current 2026 plugin/skill/command/subagent schemas):
+- **plugin.json version no longer drifts.** It was hardcoded (`0.8.0`) and stale; `build.py`
+  now **stamps the version from the `VERSION` file**, and `build --check` fails if it drifts —
+  same single-source/no-drift guarantee as the generated tree.
+- **Cleaner plugin manifest.** Dropped the redundant `commands`/`skills`/`agents` path keys
+  (Claude Code auto-discovers those default dirs; the `skills` key even *adds to* the default),
+  and added `license`, `homepage`, `repository`.
+- **Idiomatic commands & subagents.** Slash commands now declare `argument-hint` (and use
+  `$ARGUMENTS` as starting context instead of a trailing "Arguments:" line); the two subagents
+  now `skills:`-preload their own skill, making the thin-pointer wiring robust.
+- Confirmed Kiro & Claude skill `SKILL.md` bodies remain byte-identical (single source).
+- **tests:** smoke test 36 → 41 — plugin/marketplace manifest validity, version-drift guard
+  (catch + restamp), and command/subagent frontmatter wiring.
+
 ## [0.9.1]
 Kiro QA + SharePoint/MCP follow-up (validated against a live Kiro 0.11 install):
 - Verified every generated Kiro artifact (skills, subagents, auto-steering, hooks) conforms to
