@@ -35,13 +35,7 @@ curl -fsSL https://raw.githubusercontent.com/aithinkers/devloop/main/install.sh 
 ./devloop list   ./devloop uninstall   ./devloop doctor
 ```
 
-`--host claude|kiro|codex|all` · `--scope project|home`. **Claude Code** users can also install
-from the plugin marketplace:
-
-```
-/plugin marketplace add aithinkers/devloop
-/plugin install devloop@devloop-marketplace
-```
+`--host claude|kiro|codex|all` · `--scope project|home`.
 
 Then just describe a feature and let the chain auto-trigger. To call a phase directly, the
 surface differs by host: **Claude Code** has `/spec-context`, `/spec-requirements`, … commands;
@@ -132,7 +126,7 @@ agent for you) do the deterministic bookkeeping:
 All three hosts get the **same Agent Skills** (the `skills/` library). Each adds its own idioms.
 Host-specific details below reflect each tool **as of mid-2026** — these are fast-moving products,
 so check the host's current docs if something has changed. Validated live on **Kiro 0.11**; the
-Claude marketplace install and the Codex layout are built to the documented conventions.
+Claude and Codex layouts are built to the documented conventions.
 
 - **Claude Code** — skills + thin `/spec-*` commands + `context-librarian`/`business-analyst`/`requirements-analyst`
   subagents. Installs to `./.claude/` or `~/.claude/`.
