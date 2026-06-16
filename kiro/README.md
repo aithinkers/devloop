@@ -14,8 +14,8 @@ install --host kiro` lands everything under `.kiro/` (project scope) or `~/.kiro
   `business-analyst`, `requirements-analyst`); invoke with `/context-librarian …`, or let Kiro
   auto-select by description. Each is a thin pointer to its skill (it never restates the method).
 - **`steering/devloop.md`** — a lean `inclusion: auto` orchestrator that only **sequences** the
-  five gated phases and points at each skill. It carries no role bodies, so nothing
-  duplicates the skills. (Reference it explicitly with `#devloop` if you ever want to.)
+  gated phases (incl. the optional BRD) and points at each skill. It carries no role bodies, so
+  nothing duplicates the skills. (Reference it explicitly with `#devloop` if you ever want to.)
 - **`hooks/*.kiro.hook`** — manual Agent Hooks for the deterministic steps: **DevLoop: lint
   wikis** (`wikikit.py lint --all`) and **DevLoop: sync wikis** (`wikikit.py sync --all`). Run
   them from the Agent Hooks panel.
