@@ -1,18 +1,50 @@
 {
-  "_comment": "Kiro arrangement. The generator copies core/shared files into specs/_template/ under Kiro-friendly names, and copies wikikit.py. Authored separately (not generated): steering/devloop-requirements-to-stories.md, README.md.",
+  "_comment": "Kiro arrangement (targets Kiro 0.9+: Agent Skills, custom subagents, auto-steering, hooks). The generator emits, per role: an Agent Skill skills/<id>/SKILL.md (frontmatter + body, agentskills.io-compatible) bundling its shared/ templates and scripts/, plus (when subagent=true) a thin agents/<id>.md that points at the skill. It also generates ONE lean auto-steering orchestrator (steering/devloop.md) that only sequences the phases, and the hooks. Authored separately (not generated): README.md. The skill bodies are the single source — subagents and steering never restate them.",
   "kind": "kiro",
   "wikikit_dest": "tools/wikikit.py",
-  "templates": {
-    "requirements-template.md": "requirements.md",
-    "story-template.md": "stories.md",
-    "definition-of-ready.md": "definition-of-ready.md",
-    "sources-index-template.md": "sources-index.md",
-    "wiki-concept-template.md": "wiki-concept.md",
-    "wiki-source-template.md": "wiki-source.md",
-    "wiki-index-template.md": "wiki-index.md",
-    "wiki-profiles.md": "wiki-profiles.md",
-    "wiki-registry.example.json": "devloop.wikis.example.json",
-    "jira-organization.md": "jira-organization.md",
-    "jira-config.example.json": "devloop.jira.example.json"
-  }
+  "roles": {
+    "context-librarian": {
+      "shared": ["wiki-concept-template.md", "wiki-source-template.md", "wiki-index-template.md", "sources-index-template.md", "wiki-profiles.md", "wiki-registry.example.json"],
+      "scripts": ["wikikit.py", "ingest.py"],
+      "subagent": true,
+      "subagent_tools": ["read", "write", "shell", "web"]
+    },
+    "requirements-analyst": {
+      "shared": ["requirements-template.md"],
+      "subagent": true,
+      "subagent_tools": ["read", "write"]
+    },
+    "story-writer": {
+      "shared": ["story-template.md", "definition-of-ready.md", "jira-organization.md", "jira-config.example.json"],
+      "subagent": false
+    },
+    "story-reviewer": {
+      "shared": ["definition-of-ready.md"],
+      "subagent": false
+    },
+    "jira-organizer": {
+      "shared": ["jira-organization.md", "jira-config.example.json"],
+      "subagent": false
+    }
+  },
+  "steering": {
+    "name": "devloop",
+    "description": "DevLoop business-analysis chain — turning a feature idea into requirements, INVEST user stories, a story review, and a Jira organization plan, grounded in compiled LLM-Wikis. Use when the user asks to gather requirements, write stories/tickets, or plan a backlog."
+  },
+  "hooks": [
+    {
+      "file": "devloop-wiki-lint",
+      "name": "DevLoop: lint wikis",
+      "description": "Validate every DevLoop wiki for broken [[wikilinks]] and orphans, including cross-wiki [[namespace:Concept]] links. Run manually from the Agent Hooks panel.",
+      "trigger": "userTriggered",
+      "command": "python3 tools/wikikit.py lint --all"
+    },
+    {
+      "file": "devloop-wiki-sync",
+      "name": "DevLoop: sync wikis",
+      "description": "Clone/pull every git-backed wiki and report which sources changed since the last build (exits non-zero on a git failure). Run manually from the Agent Hooks panel.",
+      "trigger": "userTriggered",
+      "command": "python3 tools/wikikit.py sync --all"
+    }
+  ]
 }

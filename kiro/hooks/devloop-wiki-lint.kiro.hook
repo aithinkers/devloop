@@ -1,0 +1,13 @@
+{
+  "enabled": true,
+  "name": "DevLoop: lint wikis",
+  "description": "Validate every DevLoop wiki for broken [[wikilinks]] and orphans, including cross-wiki [[namespace:Concept]] links. Run manually from the Agent Hooks panel.",
+  "version": "1",
+  "when": {
+    "type": "userTriggered"
+  },
+  "then": {
+    "type": "runCommand",
+    "command": "python3 tools/wikikit.py lint --all"
+  }
+}

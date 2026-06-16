@@ -183,9 +183,10 @@ curl -fsSL .../install.sh | sh -s -- --host claude --scope home
   `context-librarian`/`requirements-analyst` subagents, and the helper tools
   (`tools/wikikit.py` + `tools/ingest.py`). Project scope → `./.claude/`, home scope →
   `~/.claude/`. (Every host gets both helpers in its `tools/`.)
-- **Kiro** — `steering/devloop-requirements-to-stories.md` + spec templates in
-  `specs/_template/`. Project scope → `./.kiro/`, home scope → `~/.kiro/`. Reference it with
-  `#devloop-requirements-to-stories`.
+- **Kiro** (0.9+) — `skills/<role>/SKILL.md` (auto-triggering Agent Skills, same packages as
+  Claude), `agents/` subagents (context-librarian, requirements-analyst), a lean
+  `steering/devloop.md` (`inclusion: auto`) orchestrator, `hooks/` (manual lint/sync), and the
+  helper tools. Project scope → `./.kiro/`, home scope → `~/.kiro/`.
 - **Codex** — `spec-*.md` prompts (each becomes a `/` command) into `$CODEX_HOME/prompts`
   (Codex only reads prompts from there) plus the helper tools in `$CODEX_HOME/tools`; project
   scope also drops `AGENTS.md` into the repo.
@@ -238,7 +239,7 @@ freshness** check (the generated platform folders match `core/`), **cross-host i
 (both helper tools land in every host's `tools/` and are removed on uninstall), the
 `ingest.py --wiki` registry-resolved path, and a **Codex self-containment** invariant
 (every `shared/<file>` a role body cites is inlined into the prompt).
-Expect `28 passed, 0 failed` (one stage self-skips if `git` isn't installed).
+Expect `34 passed, 0 failed` (one stage self-skips if `git` isn't installed).
 
 **Manual single-wiki test in your tool.** Install (`./devloop install --host claude`), then in a scratch
 project run `python3 ~/.claude/tools/wikikit.py registry init` (or `python3 tools/wikikit.py …`
@@ -266,9 +267,10 @@ from **tool-specific arrangement**, and a generic engine arranges one into the o
   *only* its arrangement — which shared files a Claude skill bundles, which files Codex
   inlines into each prompt, the Kiro template-name mapping. `kind` selects the builder.
 - **Authored, tool-specific (edit these):** `claude-code/.claude-plugin/plugin.json`,
-  `.claude-plugin/marketplace.json`, `kiro/steering/*`, `kiro/README.md`, `codex/AGENTS.md`.
+  `.claude-plugin/marketplace.json`, `kiro/README.md`, `codex/AGENTS.md`.
 - **Generated (never edit by hand):** `claude-code/skills|commands|agents`, `codex/prompts`,
-  `kiro/specs/_template`, and the per-tool copies of `tools/*.py` (`wikikit.py` + `ingest.py`).
+  `kiro/skills|agents|steering|hooks`, and the per-tool copies of `tools/*.py` (`wikikit.py` +
+  `ingest.py`).
 
 ```bash
 ./build.sh          # read core/roles.json + each <tool>/adapter.json → generate the packages
@@ -281,7 +283,8 @@ made **once** in `core/`; tool-specific arrangement lives **with the tool**; and
 **adding a new tool is just a new folder with an `adapter.json`** (plus a ~15-line builder
 if its packaging shape is genuinely new). The generated folders can't drift — the smoke test
 fails if they do. Codex prompts come out self-contained (templates inlined, since Codex reads
-one file per command); Claude skills bundle their own `shared/`; Kiro uses spec templates.
+one file per command); Claude skills bundle their own `shared/`; Kiro (0.9+) reuses those same
+Agent Skills plus subagents, a lean auto-steering orchestrator, and hooks.
 
 ```
 devloop/
@@ -293,9 +296,9 @@ devloop/
 │   └── shared/                 # ← SOURCE: templates, guides, example configs
 ├── tools/                      # ← SOURCE: deterministic helpers — wikikit.py (registry/sync/jira/lint) + ingest.py (multi-format extract)
 ├── examples/                   # sample sources for trying a single wiki
-├── test/smoke_test.sh          # 28-check smoke test (incl. build freshness, host parity + installed-helper runnability)
+├── test/smoke_test.sh          # 34-check smoke test (incl. build freshness, host parity, installed-helper runnability + Kiro 0.9 layout)
 ├── claude-code/  adapter.json + .claude-plugin/plugin.json (authored) → skills/commands/agents (generated)
-├── kiro/         adapter.json + steering/ + README (authored)         → specs/_template/ (generated)
+├── kiro/         adapter.json + README (authored)                     → skills/agents/steering/hooks (generated)
 ├── codex/        adapter.json + AGENTS.md (authored)                  → prompts/ (generated)
 └── .claude-plugin/marketplace.json
 ```

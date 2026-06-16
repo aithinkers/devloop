@@ -2,6 +2,30 @@
 
 All notable changes to DevLoop are documented here. Versioning is semantic.
 
+## [0.9.0]
+Modernized the **Kiro** integration to the Kiro 0.9 model (Agent Skills, custom subagents,
+auto-steering, hooks). Previously Kiro got a single manual steering file that hand-restated the
+whole methodology plus inert `specs/_template/` copies; now it gets the same first-class
+treatment as Claude:
+- **Agent Skills** (`.kiro/skills/<role>/SKILL.md`) — one per role, auto-triggering by
+  description, bundling each role's `shared/` templates + `scripts/`. These are **byte-identical
+  to the Claude skill packages** (agentskills.io shape); the build engine now shares one
+  `emit_skill` between the Claude and Kiro builders, so role content has a single source.
+- **Custom subagents** (`.kiro/agents/`) for the two isolated-context roles
+  (context-librarian, requirements-analyst), with Kiro's `read/write/shell/web` tool vocab.
+  Each is a thin pointer to its skill — it never restates the method.
+- **Lean auto-steering** (`.kiro/steering/devloop.md`, `inclusion: auto`) that only *sequences*
+  the five gated phases and points at each skill (no duplicated bodies — fixes the prior
+  hand-maintained drift).
+- **Hooks** (`.kiro/hooks/*.kiro.hook`) — manual *DevLoop: lint wikis* / *sync wikis* runners
+  for the deterministic helper steps.
+- Dropped the non-idiomatic `specs/_template/`; README now positions DevLoop's richer
+  `requirements.md` as *feeding* Kiro's native EARS feature spec, not replacing it.
+- CLI `install`/`uninstall`/`list`/`doctor` updated for the new Kiro layout; `doctor` no longer
+  writes a stray `__pycache__` during its runnability check.
+- **tests:** smoke test 28 → 34 — Kiro install lands valid skills/subagents/auto-steering/hooks,
+  and Kiro skill bodies are byte-identical to Claude's (single-source guard).
+
 ## [0.8.2]
 Execution-model honesty + operational robustness (review follow-up):
 - **sync exits non-zero on fatal git errors.** `wikikit.py sync` now returns a non-zero exit

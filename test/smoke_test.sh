@@ -235,6 +235,45 @@ echo "$OUT2" | grep -q "wikikit.py missing/not runnable" && ok "doctor flags a b
   || no "doctor stayed optimistic with wikikit.py removed"
 cd "$TMP"
 
+echo "[12e] Kiro 0.9 layout: install lands skills + subagents + auto-steering + valid hooks"
+KT="$TMP/kiro"; mkdir -p "$KT"
+HOME="$KT" "$HERE/devloop" install --host kiro --scope home >/dev/null
+K="$KT/.kiro"
+# Agent Skills: name==folder, agentskills.io frontmatter (name + description)
+sk_ok=1
+for s in "$HERE"/kiro/skills/*/; do id="$(basename "$s")"
+  f="$K/skills/$id/SKILL.md"
+  [ -f "$f" ] && grep -q "^name: $id$" "$f" && grep -q "^description: " "$f" || sk_ok=0
+done
+[ "$sk_ok" = 1 ] && ok "all role skills installed with valid SKILL.md frontmatter" || no "Kiro skills missing/invalid"
+# Subagents present with a Kiro tools: [..] line and a pointer to the skill (no restated body)
+{ [ -f "$K/agents/context-librarian.md" ] && grep -q "^tools: \[" "$K/agents/context-librarian.md" \
+  && grep -q "Follow the method in the \`context-librarian\` Agent Skill" "$K/agents/context-librarian.md"; } \
+  && ok "Kiro subagent points at its skill (no duplicated body)" || no "Kiro subagent missing/!pointer"
+# Lean auto-steering: inclusion: auto + name/description, and it does NOT restate a full body
+{ head -5 "$K/steering/devloop.md" | grep -q "^inclusion: auto$" \
+  && grep -q "^name: devloop$" "$K/steering/devloop.md" \
+  && ! grep -q "^## " "$K/steering/devloop.md"; } \
+  && ok "steering is a lean inclusion:auto orchestrator (no role bodies)" || no "steering not lean/auto"
+# Hooks: valid JSON, userTriggered + runCommand
+hk_ok=1
+for h in "$K"/hooks/*.kiro.hook; do
+  python3 -c "import json,sys; d=json.load(open(sys.argv[1])); assert d['when']['type']=='userTriggered'; assert d['then']['type']=='runCommand'; assert d['enabled'] is True" "$h" 2>/dev/null || hk_ok=0
+done
+[ "$hk_ok" = 1 ] && [ -f "$K/hooks/devloop-wiki-lint.kiro.hook" ] \
+  && ok "Kiro hooks are valid userTriggered/runCommand JSON" || no "Kiro hooks invalid/missing"
+# No leftover pre-0.9 artifacts
+[ ! -e "$K/specs/_template" ] && ok "no stale specs/_template installed" || no "stale specs/_template present"
+cd "$TMP"
+
+echo "[12f] Kiro skill bodies are byte-identical to the Claude skill bodies (single source)"
+diffs=0
+for s in "$HERE"/kiro/skills/*/SKILL.md; do id="$(basename "$(dirname "$s")")"
+  cmp -s "$s" "$HERE/claude-code/skills/$id/SKILL.md" || diffs=$((diffs+1))
+done
+[ "$diffs" = 0 ] && ok "Kiro & Claude skill SKILL.md bodies match (no content fork)" || no "$diffs skill body mismatch(es)"
+cd "$TMP"
+
 echo "[13] ingest.py: recursive multi-format extraction (docx + drawio + nested md; image flagged)"
 IG="$TMP/ig"; SRCD="$IG/sources"; mkdir -p "$SRCD/sub"
 printf '# SOP\nStep one.\n' > "$SRCD/sub/sop.md"

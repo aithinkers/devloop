@@ -39,10 +39,12 @@ install_claude(){ local scope="$1" d; d="$(claude_dir "$scope")"
   run "chmod +x '$d/tools/'*.py"
 }
 install_kiro(){ local scope="$1" d; d="$(kiro_dir "$scope")"
-  say "$(c '1;36' "Kiro") → $d  (steering, spec templates, tools)"
-  run "mkdir -p '$d/steering' '$d/specs/_template' '$d/tools'"
+  say "$(c '1;36' "Kiro") → $d  (skills, agents, steering, hooks, tools)"
+  run "mkdir -p '$d/skills' '$d/agents' '$d/steering' '$d/hooks' '$d/tools'"
+  run "cp -R '$REPO/kiro/skills/.'          '$d/skills/'"
+  run "cp '$REPO/kiro/agents/'*.md          '$d/agents/'"
   run "cp '$REPO/kiro/steering/'*.md        '$d/steering/'"
-  run "cp '$REPO/kiro/specs/_template/'*    '$d/specs/_template/'"
+  run "cp '$REPO/kiro/hooks/'*.kiro.hook    '$d/hooks/'"
   run "cp '$REPO/tools/'*.py                '$d/tools/'"
   run "chmod +x '$d/tools/'*.py"
 }
@@ -71,9 +73,11 @@ uninstall_claude(){ local d; d="$(claude_dir "$1")"
 }
 uninstall_kiro(){ local d; d="$(kiro_dir "$1")"
   say "$(c '1;36' Kiro) ✗ $d"
-  run "rm -f '$d/steering/'devloop-*.md"
-  for f in "$REPO"/kiro/specs/_template/*; do run "rm -f '$d/specs/_template/$(basename "$f")'"; done
-  for f in "$REPO"/tools/*.py; do run "rm -f '$d/tools/$(basename "$f")'"; done
+  for s in "$REPO"/kiro/skills/*/;      do run "rm -rf '$d/skills/$(basename "$s")'"; done
+  for f in "$REPO"/kiro/agents/*.md;    do run "rm -f '$d/agents/$(basename "$f")'"; done
+  for f in "$REPO"/kiro/steering/*.md;  do run "rm -f '$d/steering/$(basename "$f")'"; done
+  for f in "$REPO"/kiro/hooks/*.kiro.hook; do run "rm -f '$d/hooks/$(basename "$f")'"; done
+  for f in "$REPO"/tools/*.py;          do run "rm -f '$d/tools/$(basename "$f")'"; done
 }
 uninstall_codex(){ local h; h="$(codex_home)"
   say "$(c '1;36' Codex) ✗ $h/prompts"
@@ -88,8 +92,10 @@ list_host(){ case "$1" in
     for s in "$REPO"/claude-code/skills/*/; do printf '  %s skill %s\n' "$(present "$d/skills/$(basename "$s")")" "$(basename "$s")"; done
     for f in "$REPO"/claude-code/commands/*.md; do printf '  %s cmd   /%s\n' "$(present "$d/commands/$(basename "$f")")" "$(basename "$f" .md)"; done ;;
   kiro) local d; d="$(kiro_dir "$2")"; say "Kiro ($2: $d)";
-    printf '  %s steering\n' "$(present "$d/steering/devloop-requirements-to-stories.md")"
-    printf '  %s specs/_template\n' "$(present "$d/specs/_template/requirements.md")" ;;
+    for s in "$REPO"/kiro/skills/*/; do printf '  %s skill %s\n' "$(present "$d/skills/$(basename "$s")")" "$(basename "$s")"; done
+    for f in "$REPO"/kiro/agents/*.md; do printf '  %s agent %s\n' "$(present "$d/agents/$(basename "$f")")" "$(basename "$f" .md)"; done
+    printf '  %s steering #%s\n' "$(present "$d/steering/devloop.md")" "devloop"
+    for f in "$REPO"/kiro/hooks/*.kiro.hook; do printf '  %s hook  %s\n' "$(present "$d/hooks/$(basename "$f")")" "$(basename "$f" .kiro.hook)"; done ;;
   codex) local h; h="$(codex_home)"; say "Codex ($h/prompts)";
     for f in "$REPO"/codex/prompts/*.md; do printf '  %s /%s\n' "$(present "$h/prompts/$(basename "$f")")" "$(basename "$f" .md)"; done ;;
 esac; }
@@ -108,12 +114,12 @@ doctor(){
   for scope in project home; do for h in $HOSTS_ALL; do
     case "$h" in
       claude) d="$(claude_dir "$scope")"; marker="$d/skills/context-librarian/SKILL.md"; wk="$d/tools/wikikit.py";;
-      kiro)   d="$(kiro_dir "$scope")";   marker="$d/steering/devloop-requirements-to-stories.md"; wk="$d/tools/wikikit.py";;
+      kiro)   d="$(kiro_dir "$scope")";   marker="$d/skills/context-librarian/SKILL.md"; wk="$d/tools/wikikit.py";;
       codex)  d="$(codex_home)";          marker="$d/prompts/spec-context.md"; wk="$d/tools/wikikit.py";;
     esac
     [ -f "$marker" ] || continue   # not installed for this host/scope — stay quiet
     ig="$(dirname "$wk")/ingest.py"
-    if [ -f "$wk" ] && python3 -c "import py_compile; py_compile.compile('$wk',doraise=True)" >/dev/null 2>&1; then
+    if [ -f "$wk" ] && python3 -c "import ast,sys; ast.parse(open(sys.argv[1]).read())" "$wk" >/dev/null 2>&1; then
       [ -f "$ig" ] && say "  $(c '1;32' ✓) $h ($scope) — content + helpers (wikikit.py, ingest.py) runnable" \
                    || say "  $(c '1;33' ⚠) $h ($scope) — content present, ingest.py MISSING (reinstall)"
     else

@@ -1,0 +1,22 @@
+---
+inclusion: auto
+name: devloop
+description: DevLoop business-analysis chain — turning a feature idea into requirements, INVEST user stories, a story review, and a Jira organization plan, grounded in compiled LLM-Wikis. Use when the user asks to gather requirements, write stories/tickets, or plan a backlog.
+---
+
+# DevLoop — business-analysis chain
+
+Turn a feature idea into a review-ready backlog through five **gated** roles. Each
+phase gates the next — do not skip ahead. Adopt the matching **Agent Skill** for each
+phase; the skill carries the full method, so this file only sequences them.
+
+1. **Context Librarian** — adopt the `context-librarian` skill (or `/context-librarian` subagent). Ask me one category at a time where knowledge lives (local files/folders, wikis & URLs, SharePoint, paste-in text), manage the wiki registry with `wikikit.py`, and compile a library of interlinked LLM-Wikis under `knowledge/`. Cite every fact; flag conflicts and gaps. Hand off to /spec-requirements when done.
+2. **Requirements Analyst** — adopt the `requirements-analyst` skill (or `/requirements-analyst` subagent). Read the wiki library if present and run a Socratic, one-question-at-a-time interview (offer A/B/C options), only asking about gaps the wikis don't cover. Then draft `requirements.md` (numbered FR/NFR, each tagged with wiki + source refs) and get my sign-off. No stories or code in this phase.
+3. **Story Writer** — adopt the `story-writer` skill (or `/story-writer` subagent). Read the approved `requirements.md`, group requirements into epics, decompose into INVEST user stories with Gherkin acceptance criteria, and write `stories.md` with a traceability matrix. If `devloop.jira.json` exists, add a concrete per-story Jira mapping; otherwise tag components/labels lightly. Stop if requirements are missing/unapproved.
+4. **Story Reviewer** — adopt the `story-reviewer` skill (or `/story-reviewer` subagent). Independently review `stories.md` against `requirements.md`: coverage/traceability, INVEST, acceptance-criteria quality, and Definition of Ready. Write `story-review.md` with a findings table and prioritized fixes. Recommend changes; do not silently rewrite.
+5. **Jira Organizer** — adopt the `jira-organizer` skill (or `/jira-organizer` subagent). Do two things: (1) recommend how Jira should be organized for this project (BA vs TECH projects, issue types incl. Requirement/Decision, Components from the wikis, labels, field/hierarchy mappings); (2) capture the real setup in `devloop.jira.json` (`wikikit.py jira init` / `jira validate`). Write `jira-plan.md` and, if `stories.md` exists, a Story→Project→Type→Component→Labels→Priority mapping table. Guidance + config only.
+
+Helpers live in `tools/` — run them as `python3 tools/wikikit.py …` and
+`python3 tools/ingest.py <folder> --wiki <id>` (or use the DevLoop hooks). DevLoop's
+`requirements.md` is richer than Kiro's native EARS spec (personas, FR/NFR, risks); it
+**feeds** a Kiro feature spec rather than replacing it.

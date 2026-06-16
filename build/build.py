@@ -27,7 +27,8 @@ WIKIKIT = os.path.join(REPO, "tools", "wikikit.py")
 # Everything under these prefixes is owned by the generator (cleaned + rewritten).
 GEN_PREFIXES = [
     "claude-code/skills/", "claude-code/commands/", "claude-code/agents/",
-    "codex/prompts/", "codex/tools/", "kiro/specs/_template/", "kiro/tools/",
+    "codex/prompts/", "codex/tools/",
+    "kiro/skills/", "kiro/agents/", "kiro/steering/", "kiro/hooks/", "kiro/tools/",
 ]
 
 def rd(p):
@@ -51,19 +52,25 @@ def load_adapters():
     return out
 
 # ----------------------------- per-tool builders -----------------------------
+def emit_skill(tooldir, rid, r, cfg, tools, out):
+    """An Agent Skill (agentskills.io shape): skills/<id>/SKILL.md = name+description
+    frontmatter + the role body, bundling its shared/ templates and scripts/. Shared by the
+    Claude and Kiro builders — the skill body is the single canonical copy of each role."""
+    base = f"{tooldir}/skills/{rid}"
+    fm = f"---\nname: {rid}\ndescription: {r['description']}\n---\n\n".encode()
+    out[f"{base}/SKILL.md"] = fm + rd(os.path.join(CORE, r["body"]))
+    for s in cfg.get("shared", []):
+        out[f"{base}/shared/{s}"] = shared(s)
+    for script in cfg.get("scripts", []):
+        out[f"{base}/scripts/{script}"] = tools[script]
+
 def build_claude(tooldir, adapter, roles, order, tools, out):
     for rid in order:
         r = roles[rid]
         cfg = adapter["roles"].get(rid)
         if cfg is None:
             continue
-        base = f"{tooldir}/skills/{rid}"
-        fm = f"---\nname: {rid}\ndescription: {r['description']}\n---\n\n".encode()
-        out[f"{base}/SKILL.md"] = fm + rd(os.path.join(CORE, r["body"]))
-        for s in cfg.get("shared", []):
-            out[f"{base}/shared/{s}"] = shared(s)
-        for script in cfg.get("scripts", []):
-            out[f"{base}/scripts/{script}"] = tools[script]
+        emit_skill(tooldir, rid, r, cfg, tools, out)
         out[f"{tooldir}/commands/{r['command']}.md"] = (
             f"---\ndescription: {r['title']} — see the {rid} skill\n---\n"
             f"Adopt the **{r['title']}** role defined in the `{rid}` skill. {r['summary']}\n\n"
@@ -102,8 +109,43 @@ def build_codex(tooldir, adapter, roles, order, tools, out):
     _tools_into(tooldir, adapter, tools, out)
 
 def build_kiro(tooldir, adapter, roles, order, tools, out):
-    for src, dest in adapter.get("templates", {}).items():
-        out[f"{tooldir}/specs/_template/{dest}"] = shared(src)
+    """Kiro 0.9 packaging: one Agent Skill per role (reusing emit_skill — identical to
+    Claude), a thin custom subagent per subagent role, ONE lean auto-steering orchestrator
+    that only sequences the phases (no restated bodies), and manual hooks for the
+    deterministic helpers."""
+    present = [rid for rid in order if adapter["roles"].get(rid) is not None]
+    for rid in present:
+        r, cfg = roles[rid], adapter["roles"][rid]
+        emit_skill(tooldir, rid, r, cfg, tools, out)
+        if cfg.get("subagent"):
+            tools_list = ", ".join(cfg["subagent_tools"])
+            out[f"{tooldir}/agents/{rid}.md"] = (
+                f"---\nname: {rid}\ndescription: {r['description']}\n"
+                f"tools: [{tools_list}]\n---\n"
+                f"You are the **{r['title']}**. Follow the method in the `{rid}` Agent Skill "
+                f"(do not restate it). {r['summary']}\n").encode()
+    # Lean auto-steering orchestrator — sequences the chain, points at each skill, no bodies.
+    st = adapter["steering"]
+    lines = [f"---\ninclusion: auto\nname: {st['name']}\ndescription: {st['description']}\n---\n",
+             "# DevLoop — business-analysis chain\n",
+             "Turn a feature idea into a review-ready backlog through five **gated** roles. Each",
+             "phase gates the next — do not skip ahead. Adopt the matching **Agent Skill** for each",
+             "phase; the skill carries the full method, so this file only sequences them.\n"]
+    for i, rid in enumerate(present):
+        r = roles[rid]
+        lines.append(f"{i+1}. **{r['title']}** — adopt the `{rid}` skill (or `/{rid}` subagent). {r['summary']}")
+    lines += ["",
+              "Helpers live in `tools/` — run them as `python3 tools/wikikit.py …` and",
+              "`python3 tools/ingest.py <folder> --wiki <id>` (or use the DevLoop hooks). DevLoop's",
+              "`requirements.md` is richer than Kiro's native EARS spec (personas, FR/NFR, risks); it",
+              "**feeds** a Kiro feature spec rather than replacing it.\n"]
+    out[f"{tooldir}/steering/{st['name']}.md"] = ("\n".join(lines)).encode()
+    # Manual hooks for the deterministic steps (.kiro.hook JSON).
+    for h in adapter.get("hooks", []):
+        hook = {"enabled": True, "name": h["name"], "description": h["description"],
+                "version": "1", "when": {"type": h["trigger"]},
+                "then": {"type": "runCommand", "command": h["command"]}}
+        out[f"{tooldir}/hooks/{h['file']}.kiro.hook"] = (json.dumps(hook, indent=2) + "\n").encode()
     _tools_into(tooldir, adapter, tools, out)
 
 BUILDERS = {"claude-code": build_claude, "codex": build_codex, "kiro": build_kiro}
