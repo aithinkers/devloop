@@ -32,21 +32,22 @@ partner a username/password plus a PDF of the directory layout. No self-service,
 email, and no audit trail of who set up what.
 
 ## 5. Functional requirements
-_Source refs cite the context pack; ⚠ marks a conflict with existing docs._
+_Source refs cite the context pack and (since a BRD exists) the business requirement each FR
+serves; ⚠ marks a conflict or gap._
 
 | ID | Requirement | Priority (MoSCoW) | Source refs | Notes |
 |---|---|---|---|---|
-| FR-1 | Partner admins shall authenticate via company SSO (SAML for web) before reaching the onboarding portal. | Must | [[integrations:SSO]] [S1] | Reuses Okta IdP; no new password store |
-| FR-2 | The system shall let an authenticated partner admin create an SFTP exchange space (home dir + `inbound/`/`outbound/` layout). | Must | [[integrations:SFTP]] [S3] | Mirrors the documented directory convention |
-| FR-3 | The system shall register the partner's **SSH public key**; passwords shall never be issued or emailed. | Must | [[integrations:SFTP]] [S3] | Closes the emailed-credentials gap |
-| FR-4 | The system shall email the partner admin a confirmation (no secrets) when a space is provisioned, and Ops on failure. | Must | [[integrations:Transactional Email]] [S2] | Via SES; honors bounce handling |
-| FR-5 | The system shall record an audit entry (who, what, when) for every space created or key changed. | Should | [S3] | For Security review |
-| FR-6 | Ops shall be able to suspend a partner's access from an admin view. | Could | — | ⚠ no source — confirm with Ops |
+| FR-1 | Partner admins shall authenticate via company SSO (SAML for web) before reaching the onboarding portal. | Must | BR-2, [[integrations:SSO]] [S1] | Reuses Okta IdP; no new password store |
+| FR-2 | The system shall let an authenticated partner admin create an SFTP exchange space (home dir + `inbound/`/`outbound/` layout). | Must | BR-1, [[integrations:SFTP]] [S3] | Mirrors the documented directory convention |
+| FR-3 | The system shall register the partner's **SSH public key**; passwords shall never be issued or emailed. | Must | BR-3, [[integrations:SFTP]] [S3] | Closes the emailed-credentials gap |
+| FR-4 | The system shall email the partner admin a confirmation (no secrets) when a space is provisioned, and Ops on failure. | Must | BR-3, [[integrations:Transactional Email]] [S2] | Via SES; honors bounce handling |
+| FR-5 | The system shall record an audit entry (who, what, when) for every space created or key changed. | Should | BR-4, [S3] | For Security review |
+| FR-6 | Ops shall be able to suspend a partner's access from an admin view. | Could | BR-5 | Traces to BR-5 (`Could` in the BRD) |
 
 ## 6. Non-functional requirements
 | ID | Type | Requirement / target | Source refs |
 |---|---|---|---|
-| NFR-1 | Security | SSO via SAML; SFTP key-based auth only; secrets never in email or logs. | [[integrations:SSO]] [S1], [[integrations:SFTP]] [S3] |
+| NFR-1 | Security | SSO via SAML; SFTP key-based auth only; secrets never in email or logs. | BR-2, BR-3, [[integrations:SSO]] [S1], [[integrations:SFTP]] [S3] |
 | NFR-2 | Performance | Space provisioning completes within 60s p95 of submission. | — |
 | NFR-3 | Deliverability | Confirmation emails respect SES sending limits and bounce/complaint handling. | [[integrations:Transactional Email]] [S2] |
 

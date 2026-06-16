@@ -16,6 +16,7 @@ knowledge/
 .devloop/
 devloop.wikis.json
 devloop.jira.json
+brd.md
 requirements.md
 stories.md
 story-review.md
@@ -23,6 +24,7 @@ jira-plan.md
 
 # …but the committed illustrative sample output IS part of the repo
 !examples/sample-output/
+!examples/sample-output/brd.md
 !examples/sample-output/requirements.md
 !examples/sample-output/stories.md
 !examples/sample-output/story-review.md
