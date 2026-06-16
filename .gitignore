@@ -1,6 +1,16 @@
 # macOS
 .DS_Store
 
+# Python
+__pycache__/
+*.pyc
+
+# Local installs of DevLoop into this repo (host dirs + project-scope Codex AGENTS.md)
+.claude/
+.kiro/
+.codex/
+/AGENTS.md
+
 # Runtime artifacts created when DevLoop is *used* in a project (not part of the repo)
 knowledge/
 .devloop/

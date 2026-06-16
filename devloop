@@ -36,6 +36,7 @@ install_claude(){ local scope="$1" d; d="$(claude_dir "$scope")"
   run "cp -R '$REPO/claude-code/commands/.' '$d/commands/'"
   run "cp -R '$REPO/claude-code/agents/.'   '$d/agents/'"
   run "cp    '$REPO/tools/'*.py             '$d/tools/'"
+  run "chmod +x '$d/tools/'*.py"
 }
 install_kiro(){ local scope="$1" d; d="$(kiro_dir "$scope")"
   say "$(c '1;36' "Kiro") → $d  (steering, spec templates, tools)"
@@ -43,12 +44,14 @@ install_kiro(){ local scope="$1" d; d="$(kiro_dir "$scope")"
   run "cp '$REPO/kiro/steering/'*.md        '$d/steering/'"
   run "cp '$REPO/kiro/specs/_template/'*    '$d/specs/_template/'"
   run "cp '$REPO/tools/'*.py                '$d/tools/'"
+  run "chmod +x '$d/tools/'*.py"
 }
 install_codex(){ local scope="$1" h; h="$(codex_home)"
   say "$(c '1;36' "Codex") → $h/prompts  (slash commands, tools)"
   run "mkdir -p '$h/prompts' '$h/tools'"
   run "cp '$REPO/codex/prompts/'*.md        '$h/prompts/'"
   run "cp '$REPO/tools/'*.py                '$h/tools/'"
+  run "chmod +x '$h/tools/'*.py"
   if [ "$scope" = project ]; then
     if [ -e "$PWD/AGENTS.md" ]; then
       say "  note: $PWD/AGENTS.md exists — review $REPO/codex/AGENTS.md and merge."
@@ -101,10 +104,21 @@ doctor(){
   say ""; say "Build freshness:"
   if python3 "$REPO/build/build.py" --check >/dev/null 2>&1; then say "  $(c '1;32' ✓) generated tree matches core/";
   else say "  $(c '1;31' ✗) generated tree is STALE — run: devloop build"; fi
-  say ""; say "Install status:"
+  say ""; say "Install status (checks real files, not just dirs):"
   for scope in project home; do for h in $HOSTS_ALL; do
-    case "$h" in claude) p="$(claude_dir "$scope")/skills";; kiro) p="$(kiro_dir "$scope")/steering";; codex) p="$(codex_home)/prompts";; esac
-    [ -d "$p" ] && say "  $(c '1;32' ✓) $h ($scope)" || true
+    case "$h" in
+      claude) d="$(claude_dir "$scope")"; marker="$d/skills/context-librarian/SKILL.md"; wk="$d/tools/wikikit.py";;
+      kiro)   d="$(kiro_dir "$scope")";   marker="$d/steering/devloop-requirements-to-stories.md"; wk="$d/tools/wikikit.py";;
+      codex)  d="$(codex_home)";          marker="$d/prompts/spec-context.md"; wk="$d/tools/wikikit.py";;
+    esac
+    [ -f "$marker" ] || continue   # not installed for this host/scope — stay quiet
+    ig="$(dirname "$wk")/ingest.py"
+    if [ -f "$wk" ] && python3 -c "import py_compile; py_compile.compile('$wk',doraise=True)" >/dev/null 2>&1; then
+      [ -f "$ig" ] && say "  $(c '1;32' ✓) $h ($scope) — content + helpers (wikikit.py, ingest.py) runnable" \
+                   || say "  $(c '1;33' ⚠) $h ($scope) — content present, ingest.py MISSING (reinstall)"
+    else
+      say "  $(c '1;31' ✗) $h ($scope) — content present but wikikit.py missing/not runnable (reinstall)"
+    fi
   done; done
 }
 

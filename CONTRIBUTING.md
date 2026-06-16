@@ -17,7 +17,7 @@ Thanks for helping! DevLoop has **one source of truth**; the per-tool folders ar
 # make your change in core/ (or an adapter), then:
 ./devloop build          # regenerate the platform folders
 ./devloop build --check  # verify the tree is in sync (CI runs this)
-bash test/smoke_test.sh  # 22 checks, no network/LLM required
+bash test/smoke_test.sh  # 28 checks, no network/LLM required
 ```
 A pull request must keep `./devloop build --check` clean and the smoke test green — CI
 enforces both.

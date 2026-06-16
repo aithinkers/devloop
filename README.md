@@ -96,12 +96,20 @@ Microsoft MCP connector where the tool supports it, or via synced files / direct
 ### `tools/wikikit.py` — the deterministic helper
 
 The LLM does the thinking; `wikikit.py` (pure-stdlib Python, no LLM) does the bookkeeping —
-managing the registry, syncing git-backed wikis, change detection, and link-linting:
+managing the registry, syncing git-backed wikis, change detection, and link-linting.
+
+> **How the helpers run.** `wikikit.py`/`ingest.py` are not put on your `PATH`. During normal
+> use the **host agent runs them for you** from where the installer placed them
+> (`~/.claude/tools/`, `~/.kiro/tools/`, `$CODEX_HOME/tools/` — the skills/prompts carry the
+> path). To run them yourself, either invoke the installed copy
+> (`python3 ~/.claude/tools/wikikit.py …`) or, from a clone of this repo, `python3
+> tools/wikikit.py …`. The commands below are written bare for brevity — prefix with
+> `python3 <path>/` when you run them directly.
 
 ```
 wikikit.py registry init             # create devloop.wikis.json (the wiki library)
 wikikit.py registry list             # show wikis + last-synced commit
-wikikit.py sync <id> | --all         # git clone/pull + report files changed since last build
+wikikit.py sync <id> | --all         # git: clone/pull (fails non-zero on git error); local/url: report status + next step
 wikikit.py scaffold --wiki <id>      # create a wiki's knowledge/ structure
 wikikit.py status   --wiki <id>      # new / changed / unchanged raw sources (SHA256)
 wikikit.py commit   --wiki <id>      # record source hashes after compiling
@@ -185,8 +193,10 @@ curl -fsSL .../install.sh | sh -s -- --host claude --scope home
 ## Usage
 
 0. `/spec-context` — define your wikis in `devloop.wikis.json` (`wikikit.py registry init`),
-   point them at local folders / git repos / URLs, `sync`, and it compiles the wiki
-   library. (Skip if you have no source material.)
+   then bring in their sources by type: **git** repos are fetched automatically by `sync`;
+   **local** folders are pulled in with `ingest.py SOURCES --wiki <id>` (then tracked by
+   `status`/`commit`); **URL** sources are fetched or pasted in by you/the agent. The
+   librarian then compiles the wiki library. (Skip if you have no source material.)
 1. `/spec-requirements <one-line feature idea>` — it navigates the wikis, only asks about
    gaps; answer with A/B/C and approve the draft.
 2. `/spec-stories` — get epics, user stories, Gherkin acceptance criteria, and component tags.
@@ -228,12 +238,13 @@ freshness** check (the generated platform folders match `core/`), **cross-host i
 (both helper tools land in every host's `tools/` and are removed on uninstall), the
 `ingest.py --wiki` registry-resolved path, and a **Codex self-containment** invariant
 (every `shared/<file>` a role body cites is inlined into the prompt).
-Expect `22 passed, 0 failed` (one stage self-skips if `git` isn't installed).
+Expect `28 passed, 0 failed` (one stage self-skips if `git` isn't installed).
 
 **Manual single-wiki test in your tool.** Install (`./devloop install --host claude`), then in a scratch
-project: `wikikit.py registry init`, edit `devloop.wikis.json` down to one local wiki
-pointing at `examples/integrations-src/` (or your own docs), copy those files into
-`knowledge/raw/`, and run `/spec-context` — the agent should produce `knowledge/wiki/concepts/`
+project run `python3 ~/.claude/tools/wikikit.py registry init` (or `python3 tools/wikikit.py …`
+from a clone), edit `devloop.wikis.json` down to one local wiki pointing at
+`examples/integrations-src/` (or your own docs), ingest it with `python3
+~/.claude/tools/ingest.py examples/integrations-src --wiki <id>`, and run `/spec-context` — the agent should produce `knowledge/wiki/concepts/`
 articles (SSO, Email, SFTP) with `[[wikilinks]]` and an `index.md`. Then `/spec-requirements`
 to confirm it reads the wiki and only asks about gaps. See `examples/README.md` for the
 exact steps.
@@ -282,7 +293,7 @@ devloop/
 │   └── shared/                 # ← SOURCE: templates, guides, example configs
 ├── tools/                      # ← SOURCE: deterministic helpers — wikikit.py (registry/sync/jira/lint) + ingest.py (multi-format extract)
 ├── examples/                   # sample sources for trying a single wiki
-├── test/smoke_test.sh          # 22-check smoke test (incl. build freshness + host parity)
+├── test/smoke_test.sh          # 28-check smoke test (incl. build freshness, host parity + installed-helper runnability)
 ├── claude-code/  adapter.json + .claude-plugin/plugin.json (authored) → skills/commands/agents (generated)
 ├── kiro/         adapter.json + steering/ + README (authored)         → specs/_template/ (generated)
 ├── codex/        adapter.json + AGENTS.md (authored)                  → prompts/ (generated)

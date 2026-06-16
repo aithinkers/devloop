@@ -7,7 +7,10 @@ chain. Each phase gates the next; do not skip ahead.
    company knowledge lives (local files/folders, wikis & URLs, SharePoint, paste-in text).
    Compile the sources into an interlinked LLM-Wiki under `knowledge/` (concept
    articles with [[wikilinks]] + source-traceable frontmatter + an `index.md` routing
-   layer). Use `tools/wikikit.py` for scaffold/status/commit/lint. Run this FIRST when source material exists.
+   layer). The installer placed the helpers in `$CODEX_HOME/tools` (default
+   `~/.codex/tools/`): run them as `python3 ~/.codex/tools/wikikit.py …` (scaffold/status/
+   commit/lint) and `python3 ~/.codex/tools/ingest.py <folder> --wiki <id>` to pull a local
+   source folder into `raw/`. Run this FIRST when source material exists.
 1. **/spec-requirements** — Act as a Requirements Analyst. First read `knowledge/wiki/index.md` if present, open relevant concept articles, and only ask about gaps. Interview Socratically, ONE
    question at a time with A/B/C options, until the checklist is covered. Produce
    `requirements.md` with numbered FR/NFR IDs and explicit sign-off. No solutioning, no

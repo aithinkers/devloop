@@ -104,6 +104,35 @@ else
   echo "  (git not found — skipping git-backed test)"
 fi
 
+echo "[8b] sync exits NON-ZERO on a fatal git error (no silent success)"
+SF="$TMP/syncfail"; mkdir -p "$SF"; cd "$SF"
+python3 "$WK" registry init >/dev/null
+python3 - <<'PY'
+import json
+r=json.load(open("devloop.wikis.json"))
+r["wikis"]=[{"id":"bad","kind":"integrations",
+            "source":{"type":"git","url":"/no/such/repo.git","ref":"main"},
+            "wiki_path":".devloop/wikis/bad/knowledge/wiki"}]
+json.dump(r,open("devloop.wikis.json","w"),indent=2)
+PY
+if python3 "$WK" sync bad >/dev/null 2>&1; then no "sync returned 0 on git clone failure"; else ok "sync exits non-zero on git failure"; fi
+cd "$TMP"
+
+echo "[8c] sync on a local source with no raw/ prints the exact ingest command"
+SL="$TMP/synclocal"; mkdir -p "$SL"; cd "$SL"
+python3 "$WK" registry init >/dev/null
+python3 - <<'PY'
+import json
+r=json.load(open("devloop.wikis.json"))
+r["wikis"]=[{"id":"proj","kind":"project","role":"primary",
+            "source":{"type":"local","path":"srcdocs"},"wiki_path":"knowledge/wiki"}]
+json.dump(r,open("devloop.wikis.json","w"),indent=2)
+PY
+python3 "$WK" scaffold --wiki proj >/dev/null
+python3 "$WK" sync proj | grep -q "ingest.py srcdocs --wiki proj" \
+  && ok "local sync points at the ingest command for source.path" || no "local sync missing ingest hint"
+cd "$TMP"
+
 echo "[9] cross-wiki lint: catch a broken [[namespace:Concept]] link"
 XW="$TMP/xwiki"; mkdir -p "$XW"; cd "$XW"
 python3 "$WK" registry init >/dev/null
@@ -178,6 +207,32 @@ for pair in ".claude/tools" ".kiro/tools" ".codex/tools"; do
   done
 done
 [ -z "$left" ] && ok "uninstall removed both helpers for all hosts" || no "uninstall left:$left"
+cd "$TMP"
+
+echo "[12c] the INSTALLED helper actually runs (docs invocation path), and is executable"
+RT="$TMP/runtest"; mkdir -p "$RT"
+HOME="$RT" "$HERE/devloop" install --host claude --scope home >/dev/null
+IWK="$RT/.claude/tools/wikikit.py"
+[ -x "$IWK" ] && ok "installed wikikit.py has the executable bit" || no "installed wikikit.py not executable"
+WORK="$RT/work"; mkdir -p "$WORK"; cd "$WORK"
+if python3 "$IWK" registry init >/dev/null 2>&1 && [ -f "$WORK/devloop.wikis.json" ]; then
+  ok "installed wikikit.py runs end to end (registry init)"
+else
+  no "installed wikikit.py did not run from its host location"
+fi
+cd "$TMP"
+
+echo "[12d] devloop doctor verifies real files + helper runnability (not just dirs)"
+DT="$TMP/doctor"; mkdir -p "$DT"
+HOME="$DT" CODEX_HOME="$DT/.codex" "$HERE/devloop" install --host claude --scope home >/dev/null
+OUT="$(cd "$DT" && HOME="$DT" CODEX_HOME="$DT/.codex" "$HERE/devloop" doctor 2>&1)"
+echo "$OUT" | grep -q "claude (home) — content + helpers" && ok "doctor confirms installed claude is runnable" \
+  || no "doctor did not confirm runnable claude install"
+# break the install: remove wikikit.py and confirm doctor flags it instead of reporting OK
+rm -f "$DT/.claude/tools/wikikit.py"
+OUT2="$(cd "$DT" && HOME="$DT" CODEX_HOME="$DT/.codex" "$HERE/devloop" doctor 2>&1)"
+echo "$OUT2" | grep -q "wikikit.py missing/not runnable" && ok "doctor flags a broken install (missing helper)" \
+  || no "doctor stayed optimistic with wikikit.py removed"
 cd "$TMP"
 
 echo "[13] ingest.py: recursive multi-format extraction (docx + drawio + nested md; image flagged)"

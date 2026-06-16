@@ -145,25 +145,47 @@ def registry(args):
     sys.exit("usage: wikikit.py registry (init|list)")
 
 # ------------------------------- sync ----------------------------------------
+class _GitResult:
+    def __init__(self, returncode, stdout="", stderr=""):
+        self.returncode, self.stdout, self.stderr = returncode, stdout, stderr
+
 def git(*a):
-    return subprocess.run(["git", *a], capture_output=True, text=True)
+    try:
+        return subprocess.run(["git", *a], capture_output=True, text=True)
+    except FileNotFoundError:
+        return _GitResult(127, stderr="git is not installed")
+
+INGEST = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ingest.py")
+
+def _git_err(r):
+    return r.stderr.strip().splitlines()[-1] if r.stderr and r.stderr.strip() else "error"
 
 def sync_one(reg_dir, reg, w):
+    """Refresh one wiki's raw sources. Returns True on success, False on a fatal error.
+    Only `git` sources are auto-fetched; `local` folders are pulled in with ingest.py and
+    `url` sources are fetched/pasted manually (both reported, never a hard failure)."""
     src = w["source"]
     if src["type"] == "url":
-        print(f"  {w['id']}: url source — fetch/paste manually into raw/, then `commit`")
-        return
+        urls = src.get("url") or src.get("urls") or []
+        n = len(urls) if isinstance(urls, list) else 1
+        print(f"  {w['id']}: url source ({n} link(s)) — fetch/paste into raw/ manually, then `commit`")
+        return True
     if src["type"] == "local":
         k = knowledge_dir_for(reg_dir, w)
-        if os.path.isdir(os.path.join(k, "raw")):
+        if os.path.isdir(os.path.join(k, "raw")) and raw_files(k):
             st = load_state(k); changed = [rawname(k, p) for p in raw_files(k)
                                            if st.get(rawname(k, p)) != sha(p)]
             print(f"  {w['id']}: local — {len(changed)} source(s) new/changed" +
                   (": " + ", ".join(changed) if changed else ""))
         else:
-            print(f"  {w['id']}: local — no raw/ yet (run scaffold)")
-        return
-    # git
+            # No raw material yet. `sync` does not auto-walk a local folder (it could be the
+            # repo root); tell the developer the exact ingest command for source.path.
+            path = src.get("path")
+            hint = (f"python3 {INGEST} {path} --wiki {w['id']}" if path
+                    else "add files under raw/ or run ingest.py")
+            print(f"  {w['id']}: local — no raw/ sources yet. Ingest first:\n      {hint}")
+        return True
+    # git — the only source type `sync` fetches automatically
     dest = os.path.join(reg_dir, reg.get("cache_dir", ".devloop/wikis"), w["id"])
     ref = src.get("ref", "main")
     prev = w.get("last_synced", {}).get("sha")
@@ -171,13 +193,16 @@ def sync_one(reg_dir, reg, w):
         os.makedirs(os.path.dirname(dest), exist_ok=True)
         r = git("clone", "--depth", "50", "--branch", ref, src["url"], dest)
         if r.returncode:
-            print(f"  {w['id']}: clone FAILED — {r.stderr.strip().splitlines()[-1] if r.stderr else 'error'}")
-            return
+            print(f"  {w['id']}: clone FAILED — {_git_err(r)}")
+            return False
         action = "cloned"
     else:
-        git("-C", dest, "fetch", "--depth", "50", "origin", ref)
-        git("-C", dest, "checkout", ref)
-        git("-C", dest, "reset", "--hard", f"origin/{ref}")
+        for op in (("fetch", "--depth", "50", "origin", ref), ("checkout", ref),
+                   ("reset", "--hard", f"origin/{ref}")):
+            r = git("-C", dest, *op)
+            if r.returncode:
+                print(f"  {w['id']}: {op[0]} FAILED — {_git_err(r)}")
+                return False
         action = "pulled"
     head = git("-C", dest, "rev-parse", "HEAD").stdout.strip()
     changed = []
@@ -191,6 +216,7 @@ def sync_one(reg_dir, reg, w):
     elif prev:
         msg += f" — {len(changed)} file(s) changed since last build"
     print(msg)
+    return True
 
 def sync(args):
     p, reg = load_registry(args)
@@ -198,9 +224,11 @@ def sync(args):
     targets = reg["wikis"] if "--all" in args else \
         [find_wiki(reg, [a for a in args[2:] if not a.startswith("--")][0])]
     print("Syncing:")
-    for w in targets:
-        sync_one(reg_dir, reg, w)
+    failed = [w["id"] for w in targets if not sync_one(reg_dir, reg, w)]
     save_registry(p, reg)
+    if failed:
+        print(f"sync: {len(failed)} wiki(s) FAILED — {', '.join(failed)}")
+        return 1
     return 0
 
 # --------------------------- per-wiki ops ------------------------------------

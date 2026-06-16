@@ -27,8 +27,16 @@ live in their own git repos. They are described in a registry file `devloop.wiki
 Each registry entry has: `id`, `kind`, optional `role: primary` (the wiki we're building
 requirements for), a `source` (`local` path, `git` url+ref+subpath, or `url` list), a flag
 `source.contains` = `sources` (raw material we compile) or `wiki` (already-compiled, just
-reference), and a `wiki_path` (where the compiled wiki lives). Git-backed wikis are cloned
-into `cache_dir` (default `.devloop/wikis/<id>`).
+reference), and a `wiki_path` (where the compiled wiki lives).
+
+How each source type reaches `raw/` (they are **not** all fetched the same way):
+- **git** — `wikikit.py sync <id>` clones/pulls into `cache_dir` (default `.devloop/wikis/<id>`)
+  automatically and reports changed files. This is the only type `sync` fetches.
+- **local** — run `tools/ingest.py <source.path> --wiki <id>` to mirror the folder into
+  `raw/` (see below); `sync` then just reports new/changed sources. `sync` does **not** auto-walk
+  a local folder, so for a `local` source with no `raw/` yet it prints the exact ingest command.
+- **url** — fetch the page(s) yourself (or with the agent's browse/vision) and save into `raw/`,
+  then `commit`. `sync` only reminds you; it does not download.
 
 ## Cross-wiki links
 Within a wiki, link concepts with `[[Concept]]`. To reference a concept in **another**

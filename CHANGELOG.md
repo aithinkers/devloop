@@ -2,6 +2,25 @@
 
 All notable changes to DevLoop are documented here. Versioning is semantic.
 
+## [0.8.2]
+Execution-model honesty + operational robustness (review follow-up):
+- **sync exits non-zero on fatal git errors.** `wikikit.py sync` now returns a non-zero exit
+  (and a `FAILED` summary) when a clone/fetch/checkout fails, instead of silently exiting 0 —
+  so scripted sync/refresh steps surface failures. Missing `git` is reported cleanly (no traceback).
+- **Source types are no longer presented as interchangeable `sync` targets.** Only `git`
+  sources are auto-fetched by `sync`; for a `local` source with no `raw/` yet, `sync` prints the
+  exact `ingest.py <source.path> --wiki <id>` command; `url` sources are fetched/pasted manually.
+  README, the Context Librarian role, and the cheatsheet now describe each path accurately.
+- **Helper invocation model documented + helpers made executable.** Installed `wikikit.py`/
+  `ingest.py` get the executable bit, and the docs explain they aren't on `PATH` — the host
+  agent runs them from the install location, or you run `python3 <path>/wikikit.py …`. Manual
+  test path and Codex `AGENTS.md` now use runnable commands at the installed location.
+- **`devloop doctor` checks reality, not optimism.** Install status now verifies a real marker
+  file + that `wikikit.py` compiles/runs and `ingest.py` is present, flagging broken installs
+  instead of reporting OK on directory existence alone.
+- **tests:** smoke test 22 → 28 — sync non-zero on git failure, local-sync ingest hint,
+  installed-helper runs end to end + executable bit, and `doctor` flags a broken install.
+
 ## [0.8.1]
 First-run / onboarding fixes (host parity + docs accuracy):
 - **install:** the CLI now installs **both** helper tools (`wikikit.py` + `ingest.py`) into every host's `tools/`, matching the docs that reference `tools/ingest.py`. Previously only `wikikit.py` was copied, so the documented ingest workflow was missing after install. Uninstall removes both.
