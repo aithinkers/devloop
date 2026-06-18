@@ -17,8 +17,10 @@ Context Librarian  →  Requirements Analyst  →  Story Writer  →  Story Revi
 
 It installs into **Claude Code**, **Kiro**, and **Codex** from one source — as auto-triggering
 Agent Skills, so you don't invoke anything special; the right role activates when you need it.
-Inspired by Garry Tan's [gstack](https://github.com/) (role-based skills) and obra's
-[Superpowers](https://github.com/obra/superpowers) (gate each phase on the last).
+Inspired by Garry Tan's [gstack](https://github.com/) (role-based skills), obra's
+[Superpowers](https://github.com/obra/superpowers) (gate each phase on the last), and Andrej
+Karpathy's [LLM-Wiki idea](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f)
+(the knowledge-grounding model).
 
 **Why DevLoop?** Three things a raw *"write me requirements"* prompt won't give you:
 - **Grounded, not hallucinated** — every requirement traces to a source in your compiled wikis.
@@ -127,7 +129,8 @@ stories → review → Jira plan), with an end-to-end trace, in
 
 Requirements are only as good as what they're based on. So before eliciting anything, the
 Context Librarian **compiles** your scattered sources into interlinked knowledge wikis (Andrej
-Karpathy's [LLM Wiki](https://karpathy.ai/llmwiki) pattern) — concepts are de-duplicated, linked
+Karpathy's [LLM-Wiki](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f) pattern)
+— concepts are de-duplicated, linked
 with `[[wikilinks]]`, and every claim traces to its source. There's no vector store; an
 `index.md` is the routing layer.
 
