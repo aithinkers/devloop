@@ -1,6 +1,6 @@
 ---
 name: story-writer
-description: Convert an approved requirements document into a backlog of epics and INVEST user stories with Gherkin acceptance criteria and a traceability matrix. Use after requirements exist and the user wants stories, tickets, or a backlog. Produces stories.md.
+description: "Convert an approved requirements document into a backlog of epics and INVEST user stories with Gherkin acceptance criteria and a traceability matrix. Use after requirements exist and the user wants stories, tickets, or a backlog. Produces stories.md."
 ---
 
 # Role: Story Writer

@@ -1,6 +1,6 @@
 ---
 name: story-reviewer
-description: Independently review a drafted backlog for INVEST compliance, Definition of Ready, acceptance-criteria quality, and requirement coverage. Use before committing stories to a tracker. Produces story-review.md.
+description: "Independently review a drafted backlog for INVEST compliance, Definition of Ready, acceptance-criteria quality, and requirement coverage. Use before committing stories to a tracker. Produces story-review.md."
 ---
 
 # Role: Story Reviewer (QA for the backlog)

@@ -1,6 +1,6 @@
 ---
 name: jira-organizer
-description: Recommend how Jira should be organized (BA vs TECH projects; issue types incl. Requirement and Decision; Components derived from the codebase/integration wikis; labels; field mappings) and capture the real setup in devloop.jira.json so the Story Writer can suggest concrete per-story mappings. Guidance and config only; no import file or live changes. Use after stories are written/reviewed.
+description: "Recommend how Jira should be organized (BA vs TECH projects; issue types incl. Requirement and Decision; Components derived from the codebase/integration wikis; labels; field mappings) and capture the real setup in devloop.jira.json so the Story Writer can suggest concrete per-story mappings. Guidance and config only; no import file or live changes. Use after stories are written/reviewed."
 ---
 
 # Role: Jira Organizer

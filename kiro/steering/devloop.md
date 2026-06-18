@@ -1,7 +1,7 @@
 ---
 inclusion: auto
 name: devloop
-description: DevLoop business-analysis chain — turning a feature idea into requirements, INVEST user stories, a story review, and a Jira organization plan, grounded in compiled LLM-Wikis. Use when the user asks to gather requirements, write stories/tickets, or plan a backlog.
+description: "DevLoop business-analysis chain — turning a feature idea into requirements, INVEST user stories, a story review, and a Jira organization plan, grounded in compiled LLM-Wikis. Use when the user asks to gather requirements, write stories/tickets, or plan a backlog."
 ---
 
 # DevLoop — business-analysis chain

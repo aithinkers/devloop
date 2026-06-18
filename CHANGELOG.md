@@ -2,6 +2,16 @@
 
 All notable changes to DevLoop are documented here. Versioning is semantic.
 
+## [0.13.1]
+Fix invalid YAML frontmatter (reported: parser error viewing the business-analyst agent):
+- The `business-analyst` `description` contains a colon-space (`…SI processes: produce…`), which
+  is **invalid YAML** in an unquoted scalar — strict frontmatter parsers error on the second
+  `: `. The build now emits every generated `description` (and the command `description` + Kiro
+  steering `description`) as a **quoted scalar** (`json.dumps(…, ensure_ascii=False)`), so colons,
+  quotes, and unicode are always valid. Affected the SKILL.md + command + subagent for that role.
+- **New guard:** smoke test asserts every generated `description:` line is a quoted YAML scalar,
+  so an unquoted colon can't regress. Tests 44 → 45.
+
 ## [0.13.0]
 Realigned the **Kiro** integration to gstack's proven skills-only model (Claude and Codex
 unchanged):

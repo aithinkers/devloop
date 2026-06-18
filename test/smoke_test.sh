@@ -338,6 +338,14 @@ done
 [ "$ag_ok" = 1 ] && ok "every subagent preloads + points at its skill" || no "subagent skill wiring incomplete"
 cd "$TMP"
 
+echo "[12q] generated frontmatter descriptions are quoted (valid YAML even with colons)"
+# A description value containing ': ' is invalid YAML unless quoted. Every generated
+# `description:` line must be a quoted scalar (description: "...").
+unquoted="$(grep -rhn '^description: ' "$HERE"/skills/*/SKILL.md "$HERE"/agents/*.md "$HERE"/commands/*.md "$HERE"/kiro/steering/*.md 2>/dev/null | grep -v '^[0-9]*:description: "' || true)"
+[ -z "$unquoted" ] && ok "all generated descriptions are quoted YAML scalars" \
+  || no "unquoted description (breaks YAML on a colon): $unquoted"
+cd "$TMP"
+
 echo "[13] ingest.py: recursive multi-format extraction (docx + drawio + nested md; image flagged)"
 IG="$TMP/ig"; SRCD="$IG/sources"; mkdir -p "$SRCD/sub"
 printf '# SOP\nStep one.\n' > "$SRCD/sub/sop.md"

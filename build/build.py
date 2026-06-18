@@ -16,7 +16,7 @@ library, the build adds only the genuinely host-specific wrappers:
                       Claude in place; the CLI copies them to .kiro/skills & .agents/skills
     commands/, agents/   Claude slash-command + subagent wrappers (thin pointers to skills)
     .claude-plugin/plugin.json   version stamped from VERSION
-    kiro/agents|steering|hooks|settings   Kiro 0.9 wrappers (driven by kiro/adapter.json)
+    kiro/steering/devloop.md     Kiro lean auto-steering orchestrator (skills installed by the CLI)
 
   authored (never generated): .claude-plugin/{plugin.json fields, marketplace.json},
     kiro/{adapter.json, README.md}, codex/AGENTS.md (Codex's gated-chain orchestrator).
@@ -67,7 +67,8 @@ def build_skills(roles, order, tools, out):
     copy every host uses — Claude reads it in place; the installer copies it to Kiro/Codex."""
     for rid in order:
         r = roles[rid]
-        fm = f"---\nname: {rid}\ndescription: {r['description']}\n---\n\n".encode()
+        # description is JSON-quoted so colons/quotes in the text stay valid YAML frontmatter
+        fm = f"---\nname: {rid}\ndescription: {json.dumps(r['description'], ensure_ascii=False)}\n---\n\n".encode()
         out[f"skills/{rid}/SKILL.md"] = fm + rd(os.path.join(CORE, r["body"]))
         for s in r.get("shared", []):
             out[f"skills/{rid}/shared/{s}"] = shared(s)
@@ -81,13 +82,13 @@ def build_claude(roles, order, out):
     for rid in order:
         r = roles[rid]
         out[f"commands/{r['command']}.md"] = (
-            f"---\ndescription: {r['title']} — see the {rid} skill\n"
+            f"---\ndescription: {json.dumps(r['title'] + ' — see the ' + rid + ' skill', ensure_ascii=False)}\n"
             f"argument-hint: \"[optional: a one-line feature idea or context]\"\n---\n"
             f"Adopt the **{r['title']}** role defined in the `{rid}` skill. {r['summary']}\n\n"
             f"If any arguments were provided, treat them as the starting context: $ARGUMENTS\n").encode()
         if r.get("subagent"):
             out[f"agents/{rid}.md"] = (
-                f"---\nname: {rid}\ndescription: {r['description']}\n"
+                f"---\nname: {rid}\ndescription: {json.dumps(r['description'], ensure_ascii=False)}\n"
                 f"tools: {CLAUDE_SUBAGENT_TOOLS[rid]}\nskills: [{rid}]\n---\n"
                 f"You are the **{r['title']}**. Follow the method in the `{rid}` skill "
                 f"(do not restate it). {r['summary']}\n").encode()
@@ -98,7 +99,7 @@ def build_kiro(adapter, roles, order, out):
     .kiro/skills/devloop/. The only generated wrapper is ONE lean auto-steering orchestrator that
     sequences the gated chain and points at each skill. No subagents / hooks / MCP."""
     st = adapter["steering"]
-    lines = [f"---\ninclusion: auto\nname: {st['name']}\ndescription: {st['description']}\n---\n",
+    lines = [f"---\ninclusion: auto\nname: {st['name']}\ndescription: {json.dumps(st['description'], ensure_ascii=False)}\n---\n",
              "# DevLoop — business-analysis chain\n",
              "Turn a feature idea into a review-ready backlog through a chain of **gated** roles. Each",
              "phase gates the next — do not skip ahead. Adopt the matching **Agent Skill** for each",

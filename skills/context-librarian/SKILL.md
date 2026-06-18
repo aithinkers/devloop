@@ -1,6 +1,6 @@
 ---
 name: context-librarian
-description: Compile existing company knowledge (docs, meeting minutes, processes, integration specs, wikis, SharePoint, URLs) into an interlinked LLM-Wiki — concept articles with [[wikilinks]], source-traceable frontmatter, and an index.md routing layer — so requirements align to what already exists. Use FIRST, before eliciting requirements, whenever the user can point to source material.
+description: "Compile existing company knowledge (docs, meeting minutes, processes, integration specs, wikis, SharePoint, URLs) into an interlinked LLM-Wiki — concept articles with [[wikilinks]], source-traceable frontmatter, and an index.md routing layer — so requirements align to what already exists. Use FIRST, before eliciting requirements, whenever the user can point to source material."
 ---
 
 # Role: Context Librarian (multi-wiki LLM-Wiki compiler)

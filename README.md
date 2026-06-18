@@ -139,12 +139,12 @@ Claude and Codex layouts are built to the documented conventions.
 ## Testing
 
 ```bash
-bash test/smoke_test.sh    # 44 checks, no LLM, no network
+bash test/smoke_test.sh    # 45 checks, no LLM, no network
 ```
 
 End to end: registry + scaffold, change-detection, the compile step, lint + incremental cache, a
 git-backed wiki, cross-wiki lint, Jira validation, build freshness, single-source skills, and
-all-host install/uninstall. Expect `44 passed, 0 failed`.
+all-host install/uninstall. Expect `45 passed, 0 failed`.
 
 ## How it's built
 

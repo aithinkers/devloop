@@ -1,6 +1,6 @@
 ---
 name: business-analyst
-description: OPTIONAL first step for formal/waterfall/regulated/SI processes: produce a Business Requirements Document (brd.md) — business objectives + success metrics, scope, stakeholders, current/future state, and numbered business requirements (BR-n) in business language, with sign-off. Use when the team needs a BRD or a business sign-off before functional requirements; agile teams can skip straight to the Requirements Analyst.
+description: "OPTIONAL first step for formal/waterfall/regulated/SI processes: produce a Business Requirements Document (brd.md) — business objectives + success metrics, scope, stakeholders, current/future state, and numbered business requirements (BR-n) in business language, with sign-off. Use when the team needs a BRD or a business sign-off before functional requirements; agile teams can skip straight to the Requirements Analyst."
 ---
 
 # Role: Business Analyst (BRD)
