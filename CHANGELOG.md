@@ -2,6 +2,18 @@
 
 All notable changes to DevLoop are documented here. Versioning is semantic.
 
+## [0.16.0]
+Docs as a product surface (landing page + focused guides), per the ECC product-discipline review:
+- **`DEVLOOP-QUICK-REF.md`** — one-page cheat sheet: which-lane decision guide, per-host
+  invocation table, CLI + helper command reference, and the `OBJ→BR→FR→US` ID conventions.
+- **`docs/`** guides — `architecture.md` (core → skills → host wrappers + no-drift),
+  `agile-lane.md` and `brd-lane.md` (the two lanes step by step), `org-rollout.md` (shared wikis,
+  Jira org, multi-team adoption).
+- **README is now the landing page** — added a Documentation index and tightened the heaviest
+  sections (shared-wikis, "how it's built") to a summary + link, moving depth into `docs/`.
+- **tests:** 50 → 51 — a link-check guard that every relative link in README / `docs/` /
+  `examples/` resolves (no broken doc links).
+
 ## [0.15.0]
 Operational visibility + release discipline (applying ECC's "product discipline" lessons):
 - **`devloop status [--markdown]`** — a project-level readiness + chain-progress report:

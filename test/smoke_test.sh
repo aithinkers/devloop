@@ -352,6 +352,29 @@ leak="$(grep -rn '/spec-' "$HERE"/examples/ 2>/dev/null || true)"
   || no "Claude-only /spec-* leaked into shared docs: $leak"
 cd "$TMP"
 
+echo "[12s] every relative doc link resolves (no broken links in README/docs/examples)"
+if python3 - "$HERE" <<'PY'
+import os, re, glob, sys
+repo = sys.argv[1]
+files = ["README.md", "CONTRIBUTING.md", "SECURITY.md", "RELEASE-CHECKLIST.md", "DEVLOOP-QUICK-REF.md"]
+files += [os.path.relpath(p, repo) for p in glob.glob(repo + "/docs/**/*.md", recursive=True)]
+files += [os.path.relpath(p, repo) for p in glob.glob(repo + "/examples/**/*.md", recursive=True)]
+broken = []
+for rel in files:
+    p = os.path.join(repo, rel)
+    if not os.path.isfile(p): continue
+    base = os.path.dirname(p)
+    for m in re.finditer(r'\]\(([^)]+)\)', open(p).read()):
+        t = m.group(1).strip()
+        if t.startswith(("http://", "https://", "#", "mailto:")): continue
+        t = t.split('#', 1)[0]
+        if t and not os.path.exists(os.path.join(base, t)):
+            broken.append(f"{rel} -> {t}")
+if broken: print("\n".join(broken)); sys.exit(1)
+PY
+then ok "all relative doc links resolve"; else no "broken relative doc link(s) above"; fi
+cd "$TMP"
+
 echo "[13] ingest.py: recursive multi-format extraction (docx + drawio + nested md; image flagged)"
 IG="$TMP/ig"; SRCD="$IG/sources"; mkdir -p "$SRCD/sub"
 printf '# SOP\nStep one.\n' > "$SRCD/sub/sop.md"

@@ -152,15 +152,12 @@ subfolder, extracting text from markdown, `.docx/.pptx/.xlsx`, `.drawio`, `.vsdx
 PDFs (scanned files/images are flagged for the agent to read with vision). SharePoint comes in
 via an MCP connector (see the per-host notes) or synced files.
 
-**Reuse shared wikis across projects.** Build company-wide `devops`/`integrations` wikis — or a
-**`codebase` wiki that distills an existing code repo** (services, APIs, data models) — **once**
-in their own git repos, then reference them from any project: list them in `devloop.wikis.json`
-with `contains: "wiki"` (already compiled) and `wikikit.py sync --all` clones them into
-`.devloop/wikis/`. The Requirements Analyst pulls them in automatically and you link across with
-`[[devops:Release Pipeline]]` or `[[app-codebase:AuthService]]` — so a project uses the distilled
-knowledge instead of reading the whole source tree. Ready-to-edit registry + recipe:
-[examples/devloop.wikis.shared.example.json](examples/devloop.wikis.shared.example.json) and
-[examples/README.md](examples/README.md).
+**Reuse shared wikis across projects.** Build company-wide `devops`/`integrations`/`codebase`
+wikis **once** in their own git repos, then reference them from any project (`contains: "wiki"` +
+`wikikit.py sync --all`) and link across with `[[devops:Release Pipeline]]` —
+so a project uses the distilled knowledge instead of re-reading whole source trees. Playbook:
+[docs/org-rollout.md](docs/org-rollout.md) (ready-to-edit registry + recipes in
+[examples/](examples/README.md)).
 
 ## Jira: a plan, plus optional config
 
@@ -199,12 +196,12 @@ Claude and Codex layouts are built to the documented conventions.
 ## Testing
 
 ```bash
-bash test/smoke_test.sh    # 50 checks, no LLM, no network
+bash test/smoke_test.sh    # 51 checks, no LLM, no network
 ```
 
 End to end: registry + scaffold, change-detection, the compile step, lint + incremental cache, a
 git-backed wiki, cross-wiki lint, Jira validation, build freshness, single-source skills, and
-all-host install/uninstall. Expect `50 passed, 0 failed`.
+all-host install/uninstall. Expect `51 passed, 0 failed`.
 
 ## How it's built
 
@@ -212,7 +209,18 @@ All three hosts read the same `SKILL.md` Agent Skill format (the [agentskills.io
 shape), so DevLoop keeps **one** `skills/` library (generated from `core/`) and layers only thin
 host-specific wrappers on top — Claude's commands/subagents, Kiro's lean auto-steering, Codex's
 `AGENTS.md`. A content change is made once; `./devloop build --check` fails if anything drifts.
-Details for contributors: [CONTRIBUTING.md](CONTRIBUTING.md).
+Full design: [docs/architecture.md](docs/architecture.md) · contributing: [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## Documentation
+
+- [DEVLOOP-QUICK-REF.md](DEVLOOP-QUICK-REF.md) — one-page cheat sheet: which lane to run,
+  per-host invocation, CLI + helper commands, ID conventions.
+- [docs/agile-lane.md](docs/agile-lane.md) · [docs/brd-lane.md](docs/brd-lane.md) — the two lanes,
+  step by step.
+- [docs/org-rollout.md](docs/org-rollout.md) — shared wikis, Jira org, and multi-team adoption.
+- [docs/architecture.md](docs/architecture.md) — `core/ → skills/ → host wrappers` and the
+  no-drift guarantees.
+- [examples/sample-output/](examples/sample-output/) — a full worked chain (BRD → … → Jira plan).
 
 ## License
 
