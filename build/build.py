@@ -36,7 +36,7 @@ PLUGIN_JSON = os.path.join(REPO, ".claude-plugin", "plugin.json")
 # Everything under these prefixes is owned by the generator (cleaned + rewritten).
 GEN_PREFIXES = [
     "skills/", "commands/", "agents/",
-    "kiro/agents/", "kiro/steering/", "kiro/hooks/", "kiro/settings/",
+    "kiro/steering/",
 ]
 
 # Claude subagent tool vocab (full Claude tool names), per role flagged subagent in roles.json.
@@ -94,44 +94,26 @@ def build_claude(roles, order, out):
 
 # ------------------------------- Kiro wrappers -------------------------------
 def build_kiro(adapter, roles, order, out):
-    """Kiro 0.9 wrappers around the shared skills (which the CLI copies to .kiro/skills): thin
-    subagents (Kiro tool vocab), a lean auto-steering orchestrator, manual hooks, MCP example."""
-    for rid in order:
-        r = roles[rid]
-        if r.get("subagent"):
-            tl = ", ".join(adapter["subagent_tools"][rid])
-            out[f"kiro/agents/{rid}.md"] = (
-                f"---\nname: {rid}\ndescription: {r['description']}\n"
-                f"tools: [{tl}]\n---\n"
-                f"You are the **{r['title']}**. Follow the method in the `{rid}` Agent Skill "
-                f"(do not restate it). {r['summary']}\n").encode()
+    """Kiro (gstack-style): the CLI installs the shared skills/ library namespaced under
+    .kiro/skills/devloop/. The only generated wrapper is ONE lean auto-steering orchestrator that
+    sequences the gated chain and points at each skill. No subagents / hooks / MCP."""
     st = adapter["steering"]
     lines = [f"---\ninclusion: auto\nname: {st['name']}\ndescription: {st['description']}\n---\n",
              "# DevLoop — business-analysis chain\n",
              "Turn a feature idea into a review-ready backlog through a chain of **gated** roles. Each",
              "phase gates the next — do not skip ahead. Adopt the matching **Agent Skill** for each",
-             "phase; the skill carries the full method, so this file only sequences them.\n"]
+             "phase (auto-triggers by description, or invoke `$<role>` / pick from `/skills`); the",
+             "skill carries the full method, so this file only sequences them.\n"]
     for i, rid in enumerate(order):
         r = roles[rid]
-        # Only context-librarian/requirements-analyst ship as custom subagents; the rest are
-        # skills only (invoke with $name or via /skills) — don't call them subagents.
-        inv = f"or the `/{rid}` subagent" if r.get("subagent") else f"`${rid}` or `/skills`"
-        lines.append(f"{i+1}. **{r['title']}** — adopt the `{rid}` skill ({inv}). {r['summary']}")
+        lines.append(f"{i+1}. **{r['title']}** — adopt the `{rid}` skill (`${rid}` or `/skills`). {r['summary']}")
     lines += ["",
-              "Helpers are installed at `.kiro/tools/` — run them as `python3 .kiro/tools/wikikit.py …`",
-              "and `python3 .kiro/tools/ingest.py <folder> --wiki <id>` (or use the DevLoop hooks,",
-              "which call the same paths). DevLoop's `requirements.md` is richer than Kiro's native",
-              "EARS spec (personas, FR/NFR, risks); it **feeds** a Kiro feature spec, not replaces it.\n"]
+              "The helper scripts are bundled inside the `context-librarian` skill (`scripts/`) and",
+              "also installed at `.kiro/tools/` — run them as `python3 .kiro/tools/wikikit.py …` and",
+              "`python3 .kiro/tools/ingest.py <folder> --wiki <id>`. DevLoop's `requirements.md` is",
+              "richer than Kiro's native EARS spec (personas, FR/NFR, risks); it **feeds** a Kiro",
+              "feature spec, not replaces it.\n"]
     out[f"kiro/steering/{st['name']}.md"] = ("\n".join(lines)).encode()
-    for h in adapter.get("hooks", []):
-        hook = {"enabled": True, "name": h["name"], "description": h["description"],
-                "version": "1", "when": {"type": h["trigger"]},
-                "then": {"type": "runCommand", "command": h["command"]}}
-        out[f"kiro/hooks/{h['file']}.kiro.hook"] = (json.dumps(hook, indent=2) + "\n").encode()
-    mcp = adapter.get("mcp")
-    if mcp:
-        out["kiro/settings/mcp.json"] = (
-            json.dumps({"mcpServers": mcp["servers"]}, indent=2) + "\n").encode()
 
 # ------------------------------- engine --------------------------------------
 def stamp_plugin_version(write):

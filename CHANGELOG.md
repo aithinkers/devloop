@@ -2,6 +2,24 @@
 
 All notable changes to DevLoop are documented here. Versioning is semantic.
 
+## [0.13.0]
+Realigned the **Kiro** integration to gstack's proven skills-only model (Claude and Codex
+unchanged):
+- Kiro now ships **skills only**, installed namespaced under **`.kiro/skills/devloop/`**, plus the
+  lean `inclusion: auto` steering orchestrator. **Dropped the custom subagents, manual hooks, and
+  the MCP example** — Kiro reliably surfaces *skills* (auto-trigger, `$<role>`, the `/skills`
+  picker), not `/`-slash subagents, and gstack (8-host reference) ships skills-only too.
+- **Deleted the entire fragile hook machinery** this enabled: the home-scope `.kiro/tools` path
+  rewrite, the `shlex` shell-quoting, the spaces/apostrophe-in-HOME special-casing, and the
+  `doctor` hook-path check — the source of several prior review rounds. The installer is much
+  smaller and there are no generated literal-shell command strings left.
+- SharePoint/MCP is now **documented** (configure Kiro's own `.kiro/settings/mcp.json`) rather
+  than shipped, since that file is user-owned.
+- Docs updated (README per-host + invocation lines, `kiro/README.md`); **Claude keeps its
+  commands + 3 subagents, Codex keeps `AGENTS.md`** — both untouched.
+- **tests:** smoke 54 → 44 (removed the hook/MCP-specific checks; added a skills-only Kiro-layout
+  assertion that no agents/hooks/settings are shipped).
+
 ## [0.12.1]
 Integrate the BRD phase across every host entrypoint (review follow-up — the role generated, but
 two authored files + the requirements summary lagged):

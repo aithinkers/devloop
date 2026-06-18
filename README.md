@@ -38,10 +38,9 @@ curl -fsSL https://raw.githubusercontent.com/aithinkers/devloop/main/install.sh 
 `--host claude|kiro|codex|all` · `--scope project|home`.
 
 Then just describe a feature and let the chain auto-trigger. To call a phase directly, the
-surface differs by host: **Claude Code** has `/spec-context`, `/spec-requirements`, … commands;
-**Kiro** auto-triggers the role skills (invoke one with `$context-librarian` or via `/skills`;
-the three subagents also run as `/context-librarian`, `/business-analyst` & `/requirements-analyst`);
-**Codex** invokes the role skill (`$context-librarian` or `/skills`).
+surface differs by host: **Claude Code** has `/spec-context`, `/spec-requirements`, … commands
+(plus `context-librarian`/`business-analyst`/`requirements-analyst` subagents); **Kiro** and
+**Codex** invoke the role skill (`$context-librarian` or the `/skills` picker).
 
 ## How it works
 
@@ -130,9 +129,9 @@ Claude and Codex layouts are built to the documented conventions.
 
 - **Claude Code** — skills + thin `/spec-*` commands + `context-librarian`/`business-analyst`/`requirements-analyst`
   subagents. Installs to `./.claude/` or `~/.claude/`.
-- **Kiro** (0.9+) — skills + subagents + a lean `inclusion: auto` steering orchestrator + manual
-  lint/sync **hooks** + a disabled SharePoint **MCP** example (`.kiro/settings/mcp.json`, seeded
-  only if absent). See [kiro/README.md](kiro/README.md).
+- **Kiro** — **skills only** (under `.kiro/skills/devloop/`) + a lean `inclusion: auto` steering
+  orchestrator, following gstack's model (skills are the surface Kiro reliably exposes — invoke
+  via `/skills` or `$<role>`, not `/`). See [kiro/README.md](kiro/README.md).
 - **Codex** — skills into `.agents/skills/` + `AGENTS.md` as the gated-chain orchestrator (Codex
   custom prompts were deprecated in favor of skills, per OpenAI's docs). Wire SharePoint via
   `config.toml` `[mcp_servers]`; see [codex/AGENTS.md](codex/AGENTS.md).
@@ -140,18 +139,18 @@ Claude and Codex layouts are built to the documented conventions.
 ## Testing
 
 ```bash
-bash test/smoke_test.sh    # 54 checks, no LLM, no network
+bash test/smoke_test.sh    # 44 checks, no LLM, no network
 ```
 
 End to end: registry + scaffold, change-detection, the compile step, lint + incremental cache, a
 git-backed wiki, cross-wiki lint, Jira validation, build freshness, single-source skills, and
-all-host install/uninstall. Expect `54 passed, 0 failed`.
+all-host install/uninstall. Expect `44 passed, 0 failed`.
 
 ## How it's built
 
 All three hosts read the same `SKILL.md` Agent Skill format (the [agentskills.io](https://agentskills.io)
 shape), so DevLoop keeps **one** `skills/` library (generated from `core/`) and layers only thin
-host-specific wrappers on top — Claude's commands/subagents, Kiro's steering/hooks/MCP, Codex's
+host-specific wrappers on top — Claude's commands/subagents, Kiro's lean auto-steering, Codex's
 `AGENTS.md`. A content change is made once; `./devloop build --check` fails if anything drifts.
 Details for contributors: [CONTRIBUTING.md](CONTRIBUTING.md).
 

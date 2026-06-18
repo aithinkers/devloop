@@ -235,110 +235,25 @@ echo "$OUT2" | grep -q "wikikit.py missing/not runnable" && ok "doctor flags a b
   || no "doctor stayed optimistic with wikikit.py removed"
 cd "$TMP"
 
-echo "[12e] Kiro 0.9 layout: install lands skills + subagents + auto-steering + valid hooks"
+echo "[12e] Kiro layout: skills-only under .kiro/skills/devloop + lean auto-steering (no agents/hooks/mcp)"
 KT="$TMP/kiro"; mkdir -p "$KT"
 HOME="$KT" "$HERE/devloop" install --host kiro --scope home >/dev/null
 K="$KT/.kiro"
-# Agent Skills: name==folder, agentskills.io frontmatter (name + description)
+# Skills installed namespaced under devloop/, agentskills.io frontmatter (name + description)
 sk_ok=1
 for s in "$HERE"/skills/*/; do id="$(basename "$s")"
-  f="$K/skills/$id/SKILL.md"
+  f="$K/skills/devloop/$id/SKILL.md"
   [ -f "$f" ] && grep -q "^name: $id$" "$f" && grep -q "^description: " "$f" || sk_ok=0
 done
-[ "$sk_ok" = 1 ] && ok "all role skills installed with valid SKILL.md frontmatter" || no "Kiro skills missing/invalid"
-# Subagents present with a Kiro tools: [..] line and a pointer to the skill (no restated body)
-{ [ -f "$K/agents/context-librarian.md" ] && grep -q "^tools: \[" "$K/agents/context-librarian.md" \
-  && grep -q "Follow the method in the \`context-librarian\` Agent Skill" "$K/agents/context-librarian.md"; } \
-  && ok "Kiro subagent points at its skill (no duplicated body)" || no "Kiro subagent missing/!pointer"
-# Lean auto-steering: inclusion: auto + name/description, and it does NOT restate a full body
+[ "$sk_ok" = 1 ] && ok "skills installed under .kiro/skills/devloop with valid frontmatter" || no "Kiro skills missing/invalid"
+# Lean auto-steering: inclusion: auto + name/description, sequences roles, no restated bodies
 { head -5 "$K/steering/devloop.md" | grep -q "^inclusion: auto$" \
   && grep -q "^name: devloop$" "$K/steering/devloop.md" \
   && ! grep -q "^## " "$K/steering/devloop.md"; } \
   && ok "steering is a lean inclusion:auto orchestrator (no role bodies)" || no "steering not lean/auto"
-# Hooks: valid JSON, userTriggered + runCommand
-hk_ok=1
-for h in "$K"/hooks/*.kiro.hook; do
-  python3 -c "import json,sys; d=json.load(open(sys.argv[1])); assert d['when']['type']=='userTriggered'; assert d['then']['type']=='runCommand'; assert d['enabled'] is True" "$h" 2>/dev/null || hk_ok=0
-done
-[ "$hk_ok" = 1 ] && [ -f "$K/hooks/devloop-wiki-lint.kiro.hook" ] \
-  && ok "Kiro hooks are valid userTriggered/runCommand JSON" || no "Kiro hooks invalid/missing"
-# No leftover pre-0.9 artifacts
-[ ! -e "$K/specs/_template" ] && ok "no stale specs/_template installed" || no "stale specs/_template present"
-# MCP example: valid JSON, schema-clean (only mcpServers), SharePoint shipped DISABLED, no secrets
-if python3 - "$K/settings/mcp.json" <<'PY'
-import json,sys
-d=json.load(open(sys.argv[1]))
-assert list(d)==["mcpServers"], d
-s=d["mcpServers"]["sharepoint"]
-assert s["disabled"] is True
-assert s["env"]["SHAREPOINT_TOKEN"]=="${SHAREPOINT_TOKEN}"   # env ref, not a literal secret
-PY
-then ok "MCP example is valid, disabled, secret-free"; else no "MCP example invalid/enabled/leaky"; fi
-cd "$TMP"
-
-# Seed a deterministic registry (one scaffolded local wiki) in $1 so lint/sync both exit 0,
-# using the wikikit at $2 (exercises whatever path the host installed).
-_devloop_local_registry(){
-  ( cd "$1" && python3 "$2" registry init >/dev/null 2>&1 )
-  python3 - "$1/devloop.wikis.json" <<'PY'
-import json,sys
-p=sys.argv[1]; r=json.load(open(p))
-r["wikis"]=[{"id":"project","kind":"project","role":"primary",
-             "source":{"type":"local","path":"."},"wiki_path":"knowledge/wiki"}]
-json.dump(r,open(p,"w"),indent=2)
-PY
-  ( cd "$1" && python3 "$2" scaffold --wiki project >/dev/null 2>&1 )
-}
-_hook_cmd(){ python3 -c "import json,sys;print(json.load(open(sys.argv[1]))['then']['command'])" "$1"; }
-
-echo "[12k] EVERY shipped Kiro hook command runs verbatim from the workspace (project scope)"
-HK="$TMP/kiro-hookrun"; mkdir -p "$HK"
-( cd "$HK" && HOME="$HK" "$HERE/devloop" install --host kiro --scope project >/dev/null 2>&1 )
-_devloop_local_registry "$HK" ".kiro/tools/wikikit.py"
-hk_run=1
-for h in "$HK"/.kiro/hooks/*.kiro.hook; do
-  cmd=$(_hook_cmd "$h"); ( cd "$HK" && eval "$cmd" >/dev/null 2>&1 ) || { hk_run=0; echo "    failed: $cmd"; }
-done
-[ "$hk_run" = 1 ] && ok "all shipped hook commands run verbatim from the workspace (exit 0)" \
-  || no "a shipped hook command failed to run as written from the workspace"
-cd "$TMP"
-
-echo "[12l] home-scope Kiro hooks are absolute and run from an UNRELATED workspace"
-HM="$TMP/kiro-home"; mkdir -p "$HM"
-HOME="$HM" "$HERE/devloop" install --host kiro --scope home >/dev/null 2>&1
-abs_ok=1
-for h in "$HM"/.kiro/hooks/*.kiro.hook; do
-  case "$(_hook_cmd "$h")" in *"python3 .kiro/tools/"*) abs_ok=0; echo "    workspace-relative: $(_hook_cmd "$h")";; esac
-done
-[ "$abs_ok" = 1 ] && ok "home-scope hook commands are absolute (not workspace-relative)" \
-  || no "home-scope hook command is workspace-relative — breaks outside ~/.kiro"
-WS="$TMP/kiro-otherws"; mkdir -p "$WS"
-_devloop_local_registry "$WS" "$HM/.kiro/tools/wikikit.py"   # set up via the absolute installed path
-hh_run=1
-for h in "$HM"/.kiro/hooks/*.kiro.hook; do
-  cmd=$(_hook_cmd "$h"); ( cd "$WS" && eval "$cmd" >/dev/null 2>&1 ) || { hh_run=0; echo "    failed from other ws: $cmd"; }
-done
-[ "$hh_run" = 1 ] && ok "home-scope hooks run verbatim from an unrelated workspace" \
-  || no "home-scope hook failed to run from another workspace"
-cd "$TMP"
-
-echo "[12m] home-scope Kiro hooks are shell-safe when the HOME path contains spaces"
-HS="$TMP/home with spaces"; mkdir -p "$HS"
-HOME="$HS" "$HERE/devloop" install --host kiro --scope home >/dev/null 2>&1
-# every hook must still be valid JSON and shell-quote the spaced absolute path
-sq_ok=1
-for h in "$HS"/.kiro/hooks/*.kiro.hook; do
-  python3 -c "import json,sys;json.load(open(sys.argv[1]))" "$h" 2>/dev/null || { sq_ok=0; echo "    invalid JSON: $h"; }
-done
-[ "$sq_ok" = 1 ] && ok "spaced-HOME hooks remain valid JSON" || no "spaced-HOME hook is invalid JSON"
-WS3="$TMP/kiro-ws3"; mkdir -p "$WS3"
-_devloop_local_registry "$WS3" "$HS/.kiro/tools/wikikit.py"
-sp_run=1
-for h in "$HS"/.kiro/hooks/*.kiro.hook; do
-  cmd=$(_hook_cmd "$h"); ( cd "$WS3" && eval "$cmd" >/dev/null 2>&1 ) || { sp_run=0; echo "    failed (spaced HOME): $cmd"; }
-done
-[ "$sp_run" = 1 ] && ok "hooks run verbatim from another workspace even when HOME has spaces" \
-  || no "spaced-HOME hook command is not shell-safe (unquoted path)"
+# gstack-style skills-only: NO subagents / hooks / settings shipped to Kiro
+{ [ ! -e "$K/agents" ] && [ ! -e "$K/hooks" ] && [ ! -e "$K/settings" ] && [ ! -e "$K/specs" ]; } \
+  && ok "skills-only: no agents/hooks/settings shipped to Kiro" || no "unexpected Kiro surfaces present"
 cd "$TMP"
 
 echo "[12n] install itself is metacharacter-safe (paths with a space AND an apostrophe)"
@@ -346,24 +261,13 @@ PQ="$TMP/pro j'q"; mkdir -p "$PQ"   # project dir with space + apostrophe
 ( cd "$PQ" && HOME="$PQ" CODEX_HOME="$PQ/.codex" "$HERE/devloop" install --host all --scope project >/dev/null 2>&1 )
 { [ -f "$PQ/.claude/skills/context-librarian/SKILL.md" ] \
   && [ -f "$PQ/.agents/skills/story-writer/SKILL.md" ] \
-  && [ -f "$PQ/.kiro/skills/jira-organizer/SKILL.md" ]; } \
+  && [ -f "$PQ/.kiro/skills/devloop/jira-organizer/SKILL.md" ]; } \
   && ok "project-scope install works for a path with space + apostrophe (no eval)" \
   || no "install broke on a space/apostrophe project path"
 HQ="$TMP/ho me'q"; mkdir -p "$HQ"   # HOME with space + apostrophe
 HOME="$HQ" CODEX_HOME="$HQ/.codex" "$HERE/devloop" install --host all --scope home >/dev/null 2>&1
-{ [ -f "$HQ/.kiro/skills/context-librarian/SKILL.md" ] && [ -f "$HQ/.kiro/hooks/devloop-wiki-lint.kiro.hook" ]; } \
+{ [ -f "$HQ/.kiro/skills/devloop/context-librarian/SKILL.md" ] && [ -f "$HQ/.kiro/steering/devloop.md" ]; } \
   && ok "home-scope install works for a HOME with space + apostrophe" || no "install broke on a space/apostrophe HOME"
-WS4="$TMP/ws4"; mkdir -p "$WS4"; _devloop_local_registry "$WS4" "$HQ/.kiro/tools/wikikit.py"
-cmd=$(_hook_cmd "$HQ/.kiro/hooks/devloop-wiki-lint.kiro.hook")
-( cd "$WS4" && eval "$cmd" >/dev/null 2>&1 ) \
-  && ok "home hook runs from another workspace with a space+apostrophe HOME" || no "home hook broke on space/apostrophe HOME"
-cd "$TMP"
-
-echo "[12g] Kiro MCP config is user-owned: install never clobbers an existing mcp.json"
-MT="$TMP/kiro-mcp"; mkdir -p "$MT/.kiro/settings"
-printf '{"mcpServers":{"mine":{"command":"node","args":["x.js"]}}}\n' > "$MT/.kiro/settings/mcp.json"
-( cd "$MT" && HOME="$MT" "$HERE/devloop" install --host kiro --scope project >/dev/null 2>&1 )
-grep -q '"mine"' "$MT/.kiro/settings/mcp.json" && ok "existing mcp.json preserved on install" || no "install clobbered user mcp.json"
 cd "$TMP"
 
 echo "[12f] ONE canonical skills/ library at repo root — no per-host skill copies"
@@ -374,14 +278,14 @@ for stale in claude-code codex/skills kiro/skills; do [ -e "$HERE/$stale" ] && f
   && ok "single root skills/ (6 roles), no per-host copies to fork" || no "skills not single-source (n=$n fork:$fork)"
 cd "$TMP"
 
-echo "[12o] optional BRD role generates across hosts (skill + command + subagent) and is marked optional"
+echo "[12o] optional BRD role: skill + /spec-brd command + Claude subagent + in Kiro steering, flagged optional"
 { [ -f "$HERE/skills/business-analyst/SKILL.md" ] \
   && [ -f "$HERE/commands/spec-brd.md" ] \
   && [ -f "$HERE/agents/business-analyst.md" ] \
-  && [ -f "$HERE/kiro/agents/business-analyst.md" ] \
   && grep -qi 'optional' "$HERE/skills/business-analyst/SKILL.md" \
-  && grep -q '^skills: \[business-analyst\]$' "$HERE/agents/business-analyst.md"; } \
-  && ok "BRD role: skill + /spec-brd command + subagent on all hosts, flagged optional" \
+  && grep -q '^skills: \[business-analyst\]$' "$HERE/agents/business-analyst.md" \
+  && grep -q 'business-analyst' "$HERE/kiro/steering/devloop.md"; } \
+  && ok "BRD role: skill + /spec-brd + Claude subagent + sequenced in Kiro steering, flagged optional" \
   || no "BRD role not generated/wired correctly"
 cd "$TMP"
 

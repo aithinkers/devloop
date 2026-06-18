@@ -1,41 +1,8 @@
 {
-  "_comment": "Kiro host-specific wrapper config (Kiro 0.9+). Skills are generated ONCE to the repo-root skills/ (shared by all hosts) and the CLI copies them to .kiro/skills/ on install; this adapter only describes Kiro's wrappers: custom subagents (with Kiro's read/write/shell/web tool vocab) for the roles roles.json marks subagent:true, a lean auto-steering orchestrator, manual hooks, and a disabled example MCP config. Authored (not generated): README.md.",
+  "_comment": "Kiro host config. Following the proven gstack model, DevLoop ships Kiro SKILLS ONLY (the same shared skills/ library, installed namespaced under .kiro/skills/devloop/ by the CLI) plus one lean auto-steering orchestrator that sequences the gated chain. No custom subagents / hooks / MCP example — those weren't reliably surfaced and added fragile install machinery. Skills are invoked by auto-trigger (description), `$<role>`, or the `/skills` picker. Authored (not generated): README.md.",
   "kind": "kiro",
-  "subagent_tools": {
-    "context-librarian": ["read", "write", "shell", "web"],
-    "business-analyst": ["read", "write"],
-    "requirements-analyst": ["read", "write"]
-  },
   "steering": {
     "name": "devloop",
     "description": "DevLoop business-analysis chain — turning a feature idea into requirements, INVEST user stories, a story review, and a Jira organization plan, grounded in compiled LLM-Wikis. Use when the user asks to gather requirements, write stories/tickets, or plan a backlog."
-  },
-  "hooks": [
-    {
-      "file": "devloop-wiki-lint",
-      "name": "DevLoop: lint wikis",
-      "description": "Validate every DevLoop wiki for broken [[wikilinks]] and orphans, including cross-wiki [[namespace:Concept]] links. Run manually from the Agent Hooks panel.",
-      "trigger": "userTriggered",
-      "command": "python3 .kiro/tools/wikikit.py lint --all"
-    },
-    {
-      "file": "devloop-wiki-sync",
-      "name": "DevLoop: sync wikis",
-      "description": "Clone/pull every git-backed wiki and report which sources changed since the last build (exits non-zero on a git failure). Run manually from the Agent Hooks panel.",
-      "trigger": "userTriggered",
-      "command": "python3 .kiro/tools/wikikit.py sync --all"
-    }
-  ],
-  "mcp": {
-    "_note": "Example only — installed to .kiro/settings/mcp.json ONLY IF that file is absent (never clobbers your real MCP config). Point `args` at the Microsoft Graph / SharePoint MCP server you use, set `disabled` to false, and provide the token via the referenced env var (never hardcode secrets).",
-    "servers": {
-      "sharepoint": {
-        "command": "npx",
-        "args": ["-y", "<your-sharepoint-or-microsoft-graph-mcp-server>"],
-        "env": { "SHAREPOINT_TOKEN": "${SHAREPOINT_TOKEN}" },
-        "disabled": true,
-        "autoApprove": []
-      }
-    }
   }
 }
