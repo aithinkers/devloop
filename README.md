@@ -17,7 +17,7 @@ Context Librarian  →  Requirements Analyst  →  Story Writer  →  Story Revi
 
 It installs into **Claude Code**, **Kiro**, and **Codex** from one source — as auto-triggering
 Agent Skills, so you don't invoke anything special; the right role activates when you need it.
-Inspired by Garry Tan's [gstack](https://github.com/) (role-based skills), obra's
+Inspired by Garry Tan's [gstack](https://github.com/garrytan/gstack) (role-based skills), obra's
 [Superpowers](https://github.com/obra/superpowers) (gate each phase on the last), and Andrej
 Karpathy's [LLM-Wiki idea](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f)
 (the knowledge-grounding model).
@@ -53,7 +53,8 @@ curl -fsSL https://raw.githubusercontent.com/aithinkers/devloop/main/install.sh 
 ./devloop list   ./devloop uninstall   ./devloop doctor
 ```
 
-`--host claude|kiro|codex|all` · `--scope project|home`.
+`--host claude|kiro|codex|all` · `--scope project|home`. The one-liner runs code, so install only
+from the official repo (`aithinkers/devloop`) — see [SECURITY.md](SECURITY.md).
 
 Then just describe a feature and let the chain auto-trigger. To call a phase directly, the
 surface differs by host: **Claude Code** has `/spec-context`, `/spec-requirements`, … commands
@@ -216,4 +217,4 @@ Details for contributors: [CONTRIBUTING.md](CONTRIBUTING.md).
 ## License
 
 MIT — see [LICENSE](LICENSE). Contributions welcome ([CONTRIBUTING.md](CONTRIBUTING.md),
-[CHANGELOG.md](CHANGELOG.md)).
+[CHANGELOG.md](CHANGELOG.md)). Security posture & reporting: [SECURITY.md](SECURITY.md).
