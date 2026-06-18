@@ -2,6 +2,18 @@
 
 All notable changes to DevLoop are documented here. Versioning is semantic.
 
+## [0.15.0]
+Operational visibility + release discipline (applying ECC's "product discipline" lessons):
+- **`devloop status [--markdown]`** — a project-level readiness + chain-progress report:
+  registry present (+ wiki count), source new/changed counts, `lint --all` status, Jira config
+  validity, and a per-artifact checklist (`brd / requirements / stories / review / jira-plan`).
+  `--markdown` emits a paste-ready table for PRs/status updates.
+- **`RELEASE-CHECKLIST.md`** — a maintainer "truth file" to stop doc drift: the build/smoke/grep
+  steps that keep README, examples, tests, and generated surfaces aligned (most now enforced
+  automatically).
+- **tests:** 48 → 50 (`devloop status` reports missing registry and renders readiness +
+  per-artifact progress in `--markdown`).
+
 ## [0.14.0]
 First-use approachability — a real **`devloop init`** so developers don't hand-edit registries:
 - **`devloop init [--sample] [--jira]`** scaffolds a ready-to-run project in the current dir: a

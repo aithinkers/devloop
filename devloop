@@ -4,6 +4,7 @@
 #   devloop install   [--host claude|kiro|codex|all] [--scope project|home] [--dry-run]
 #   devloop uninstall [--host ...] [--scope ...] [--dry-run]
 #   devloop init      [--sample] [--jira] [--dry-run]   # scaffold a DevLoop project in ./
+#   devloop status    [--markdown]    # project readiness + where you are in the chain
 #   devloop list      [--host ...] [--scope ...]
 #   devloop doctor
 #   devloop build     [--check]      # (contributors) regenerate platform folders from core/
@@ -126,6 +127,40 @@ init(){ local sample=0 jira=0 wk; wk="$REPO/tools/wikikit.py"
   else say "  • add sources under knowledge/raw/ (or run ingest.py on a folder), adopt the Context Librarian — or skip straight to the Requirements Analyst to start cold"; fi
 }
 
+# ---- status: project readiness + where you are in the chain --------------------
+status(){ local md=0 wk; wk="$REPO/tools/wikikit.py"
+  while [ $# -gt 0 ]; do case "$1" in
+    --markdown|--md) md=1; shift;;
+    *) say "unknown option: $1 (status takes --markdown)"; exit 2;; esac; done
+  local reg sources lint jira arts
+  if [ -f devloop.wikis.json ]; then
+    local n; n=$(python3 -c "import json;print(len(json.load(open('devloop.wikis.json')).get('wikis',[])))" 2>/dev/null || echo '?')
+    reg="present ($n wiki(s))"
+    sources=$(python3 "$wk" status --wiki project 2>/dev/null | grep -oE '[0-9]+ new, [0-9]+ changed' | head -1)
+    [ -z "$sources" ] && sources="no 'project' wiki scaffolded yet"
+    if python3 "$wk" lint --all >/dev/null 2>&1; then lint="clean"; else lint="issues — run: wikikit.py lint --all"; fi
+  else
+    reg="none — run: devloop init"; sources="—"; lint="—"
+  fi
+  if [ -f devloop.jira.json ]; then
+    python3 "$wk" jira validate >/dev/null 2>&1 && jira="valid" || jira="INVALID — run: wikikit.py jira validate"
+  else jira="none (optional)"; fi
+  arts=""; for a in "brd:brd.md" "requirements:requirements.md" "stories:stories.md" "review:story-review.md" "jira-plan:jira-plan.md"; do
+    local nm="${a%%:*}" f="${a##*:}" m="–"; [ -f "$f" ] && m="✓"; arts="$arts${arts:+ · }$nm $m"; done
+  if [ "$md" = 1 ]; then
+    printf '## DevLoop status — %s\n\n| Check | Status |\n|---|---|\n' "$PWD"
+    printf '| Registry | %s |\n| Sources (project) | %s |\n| Links (lint --all) | %s |\n| Jira config | %s |\n| Artifacts | %s |\n' \
+      "$reg" "$sources" "$lint" "$jira" "$arts"
+  else
+    say "$(c '1' "DevLoop status")  ·  $PWD"
+    say "  $(c '1;36' registry)   $reg"
+    say "  $(c '1;36' sources)    $sources"
+    say "  $(c '1;36' links)      $lint"
+    say "  $(c '1;36' jira)       $jira"
+    say "  $(c '1;36' artifacts)  $arts"
+  fi
+}
+
 doctor(){
   say "$(c '1' "devloop $VERSION")  ·  repo: $REPO"
   for t in bash python3 git; do
@@ -168,6 +203,7 @@ case "$cmd" in
   install)   parse "$@"; validate; say "$(c '1' "Installing DevLoop ($SCOPE scope)")"; for h in $(hosts); do install_$h "$SCOPE"; done; say "$(c '1;32' Done.)" ;;
   uninstall) parse "$@"; validate; say "$(c '1' "Uninstalling DevLoop ($SCOPE scope)")"; for h in $(hosts); do uninstall_$h "$SCOPE"; done; say "$(c '1;32' Done.)" ;;
   init)      init "$@" ;;
+  status)    status "$@" ;;
   list)      parse "$@"; validate; for h in $(hosts); do list_host "$h" "$SCOPE"; done ;;
   doctor)    doctor ;;
   build)     CHECK=0; parse "$@"; [ "${CHECK:-0}" = 1 ] && exec python3 "$REPO/build/build.py" --check || exec python3 "$REPO/build/build.py" ;;

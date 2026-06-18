@@ -403,6 +403,23 @@ printf '{"_sentinel":"keep","version":1,"cache_dir":".devloop/wikis","wikis":[{"
 grep -q '_sentinel' "$IT/devloop.wikis.json" && ok "init never clobbers an existing devloop.wikis.json" || no "init clobbered the registry"
 cd "$TMP"
 
+echo "[13d] devloop status reports readiness + chain progress (human + --markdown)"
+ST="$TMP/status"; mkdir -p "$ST"
+# before init: registry none (capture first — avoids grep -q SIGPIPE under pipefail)
+preout="$( cd "$ST" && "$HERE/devloop" status 2>&1 )"
+printf '%s' "$preout" | grep -q 'run: devloop init' \
+  && ok "status (no registry) tells you to run devloop init" || no "status didn't report missing registry"
+( cd "$ST" && HOME="$ST" "$HERE/devloop" init --sample >/dev/null 2>&1 )
+printf '# r\n' > "$ST/requirements.md"   # one artifact present, others not
+mdout="$( cd "$ST" && "$HERE/devloop" status --markdown 2>&1 )"
+{ printf '%s' "$mdout" | grep -q '| Registry | present' \
+  && printf '%s' "$mdout" | grep -q 'Sources (project) | 3 new' \
+  && printf '%s' "$mdout" | grep -q 'requirements ✓' \
+  && printf '%s' "$mdout" | grep -q 'stories –'; } \
+  && ok "status --markdown shows registry + sources + per-artifact chain progress" \
+  || no "status --markdown output incomplete"
+cd "$TMP"
+
 echo "[14] Codex installs the shared Agent Skills to .agents/skills (no deprecated prompts)"
 CX="$TMP/codex"; mkdir -p "$CX"
 HOME="$CX" CODEX_HOME="$CX/.codex" "$HERE/devloop" install --host codex --scope home >/dev/null
