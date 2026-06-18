@@ -69,6 +69,24 @@ of **gated** roles — each one finishes (and you sign off) before the next begi
 
 Because the skills auto-trigger, the agent picks the right role for what you're doing.
 
+## What it produces
+
+Plain Markdown you can read and commit. Each requirement is **traced** — to the source that backs
+it (`[S1]`, `[[integrations:SSO]]`) and, when a BRD exists, to the business requirement it serves
+(`BR-2`). Abridged from the worked example:
+
+```markdown
+## Functional requirements
+| ID   | Requirement                                              | Priority | Source refs                       |
+|------|----------------------------------------------------------|----------|-----------------------------------|
+| FR-1 | Authenticate partner admins via company SSO (SAML).      | Must     | BR-2, [[integrations:SSO]] [S1]   |
+| FR-3 | Register the partner's SSH public key; no emailed passwords. | Must | BR-3, [[integrations:SFTP]] [S3]  |
+```
+
+…which the Story Writer carries into INVEST stories with Gherkin acceptance criteria, so the full
+chain is **`OBJ → BR → FR → US`**. See the complete worked artifacts (BRD → requirements → stories)
+in **[examples/sample-output/](examples/sample-output/)**.
+
 ## Grounded in your knowledge (a library of LLM-Wikis)
 
 Requirements are only as good as what they're based on. So before eliciting anything, the
