@@ -346,6 +346,12 @@ unquoted="$(grep -rhn '^description: ' "$HERE"/skills/*/SKILL.md "$HERE"/agents/
   || no "unquoted description (breaks YAML on a colon): $unquoted"
 cd "$TMP"
 
+echo "[12r] shared docs are host-neutral (no Claude-only /spec-* in examples/)"
+leak="$(grep -rn '/spec-' "$HERE"/examples/ 2>/dev/null || true)"
+[ -z "$leak" ] && ok "examples/ docs use host-neutral role names (no /spec-* leak)" \
+  || no "Claude-only /spec-* leaked into shared docs: $leak"
+cd "$TMP"
+
 echo "[13] ingest.py: recursive multi-format extraction (docx + drawio + nested md; image flagged)"
 IG="$TMP/ig"; SRCD="$IG/sources"; mkdir -p "$SRCD/sub"
 printf '# SOP\nStep one.\n' > "$SRCD/sub/sop.md"

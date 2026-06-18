@@ -1,5 +1,10 @@
 # DevLoop
 
+[![CI](https://github.com/aithinkers/devloop/actions/workflows/ci.yml/badge.svg)](https://github.com/aithinkers/devloop/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+![Hosts: Claude · Kiro · Codex](https://img.shields.io/badge/hosts-Claude%20%C2%B7%20Kiro%20%C2%B7%20Codex-555)
+![Agent Skills: agentskills.io](https://img.shields.io/badge/skills-agentskills.io-orange)
+
 DevLoop gives your coding agent a disciplined **business-analyst workflow**: it turns a vague
 feature idea into a review-ready backlog — requirements, user stories, a quality review, and a
 Jira plan — all **grounded in your company's existing knowledge**.
@@ -14,6 +19,15 @@ It installs into **Claude Code**, **Kiro**, and **Codex** from one source — as
 Agent Skills, so you don't invoke anything special; the right role activates when you need it.
 Inspired by Garry Tan's [gstack](https://github.com/) (role-based skills) and obra's
 [Superpowers](https://github.com/obra/superpowers) (gate each phase on the last).
+
+**Why DevLoop?** Three things a raw *"write me requirements"* prompt won't give you:
+- **Grounded, not hallucinated** — every requirement traces to a source in your compiled wikis.
+- **Gated + traceable** — a real review pass and an `OBJ → BR → FR → US` chain, not a wall of text.
+- **Portable** — one source installs into Claude Code, Kiro, and Codex.
+
+**Who it's for.** Integration-heavy B2B, consulting/SI, and regulated teams — anyone with
+scattered internal knowledge who needs *traceable* requirements. Probably overkill if you're a
+tiny team going straight from idea to code.
 
 > **Status.** DevLoop covers the *front* of the loop today — grounding → requirements →
 > stories → Jira plan. The back half (agents that pick up ready stories, implement, open/review
@@ -47,7 +61,10 @@ surface differs by host: **Claude Code** has `/spec-context`, `/spec-requirement
 ## How it works
 
 When you ask to build something, DevLoop *doesn't* jump to stories. It steps back through a chain
-of **gated** roles — each one finishes (and you sign off) before the next begins:
+of **gated** roles — each one finishes (and you sign off) before the next begins. Two lanes, same
+chain: the **Agile lane** (idea → requirements → stories, skip step 2) or the **BRD lane** (run
+step 2 first for a formal business sign-off). DevLoop is *not* heavyweight by default — the BRD is
+opt-in.
 
 1. **Context Librarian** — asks where your knowledge lives (docs, meeting minutes, SharePoint,
    wikis, repos, URLs) and **compiles it into a library of LLM-Wikis** you can trust. Run this
@@ -84,8 +101,9 @@ it (`[S1]`, `[[integrations:SSO]]`) and, when a BRD exists, to the business requ
 ```
 
 …which the Story Writer carries into INVEST stories with Gherkin acceptance criteria, so the full
-chain is **`OBJ → BR → FR → US`**. See the complete worked artifacts (BRD → requirements → stories)
-in **[examples/sample-output/](examples/sample-output/)**.
+chain is **`OBJ → BR → FR → US`**. See the complete worked artifacts (BRD → requirements →
+stories → review → Jira plan), with an end-to-end trace, in
+**[examples/sample-output/](examples/sample-output/)**.
 
 ## Grounded in your knowledge (a library of LLM-Wikis)
 
@@ -116,7 +134,7 @@ via an MCP connector (see the per-host notes) or synced files.
 **`codebase` wiki that distills an existing code repo** (services, APIs, data models) — **once**
 in their own git repos, then reference them from any project: list them in `devloop.wikis.json`
 with `contains: "wiki"` (already compiled) and `wikikit.py sync --all` clones them into
-`.devloop/wikis/`. `/spec-requirements` pulls them in automatically and you link across with
+`.devloop/wikis/`. The Requirements Analyst pulls them in automatically and you link across with
 `[[devops:Release Pipeline]]` or `[[app-codebase:AuthService]]` — so a project uses the distilled
 knowledge instead of reading the whole source tree. Ready-to-edit registry + recipe:
 [examples/devloop.wikis.shared.example.json](examples/devloop.wikis.shared.example.json) and
@@ -159,12 +177,12 @@ Claude and Codex layouts are built to the documented conventions.
 ## Testing
 
 ```bash
-bash test/smoke_test.sh    # 45 checks, no LLM, no network
+bash test/smoke_test.sh    # 46 checks, no LLM, no network
 ```
 
 End to end: registry + scaffold, change-detection, the compile step, lint + incremental cache, a
 git-backed wiki, cross-wiki lint, Jira validation, build freshness, single-source skills, and
-all-host install/uninstall. Expect `45 passed, 0 failed`.
+all-host install/uninstall. Expect `46 passed, 0 failed`.
 
 ## How it's built
 

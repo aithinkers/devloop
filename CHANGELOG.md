@@ -2,6 +2,19 @@
 
 All notable changes to DevLoop are documented here. Versioning is semantic.
 
+## [0.13.2]
+Packaging/presentation pass (the engine was ahead of the docs):
+- **Host-neutral shared docs.** Removed Claude-only `/spec-*` wording from cross-host sections
+  (README "reuse wikis" + all of `examples/`); role names now read correctly on every host.
+  `/spec-*` stays only in Claude's per-host lines. New smoke guard: no `/spec-*` in `examples/`.
+- **Full sample pack.** `examples/sample-output/` now covers all six phases — added
+  `story-review.md` and `jira-plan.md`, plus an **end-to-end trace** (source `[S3]` → `BR-3` →
+  `FR-3` → `US-3` → Jira). A check confirms the new files only reference IDs defined upstream.
+- **Sharper top-of-README:** CI/MIT/hosts/agentskills badges, a 3-bullet **"Why DevLoop?"**, a
+  **"Who it's for"** note, and the BRD reframed as an opt-in **Agile-lane vs BRD-lane** choice
+  (not a heavyweight default).
+- **tests:** 45 → 46 (host-neutral shared-docs guard).
+
 ## [0.13.1]
 Fix invalid YAML frontmatter (reported: parser error viewing the business-analyst agent):
 - The `business-analyst` `description` contains a colon-space (`…SI processes: produce…`), which

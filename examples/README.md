@@ -11,7 +11,7 @@ python3 /path/to/wikikit.py registry init
 python3 /path/to/wikikit.py scaffold --wiki integrations
 cp /path/to/examples/integrations-src/*.md knowledge/raw/
 python3 /path/to/wikikit.py status --wiki integrations      # -> 3 NEW
-#  ... now run /spec-context (the LLM compiles concept articles from knowledge/raw) ...
+#  ... now adopt the Context Librarian (it compiles concept articles from knowledge/raw) ...
 python3 /path/to/wikikit.py lint   --wiki integrations
 python3 /path/to/wikikit.py commit --wiki integrations
 ```
@@ -24,7 +24,7 @@ shared `devops` and `integrations` wikis pulled from their own git repos.
 
 **1. Build each shared wiki once** (in its own repo, or a scratch dir), then commit its compiled
 `knowledge/wiki/` to that repo — see the single-wiki recipe above. (Build it from raw docs with
-`ingest.py <folder> --wiki <id>` then `/spec-context`.)
+`ingest.py <folder> --wiki <id>` then the Context Librarian.)
 
 **2. In your current project**, drop in the registry and pull the shared wikis:
 
@@ -35,7 +35,7 @@ python3 /path/to/wikikit.py sync --all     # clones devops + integrations into .
 python3 /path/to/wikikit.py lint --all     # checks [[devops:…]] / [[integrations:…]] resolve
 ```
 
-**3. Run the chain.** `/spec-requirements` reads your primary project wiki, pulls in the
+**3. Run the chain.** The Requirements Analyst reads your primary project wiki, pulls in the
 referenced `devops`/`integrations` wikis as needed, and tags each requirement with the backing
 concept + source. Link shared concepts with a namespace: `[[integrations:SSO]]`,
 `[[devops:Release Pipeline]]`.
@@ -57,7 +57,7 @@ shows the consumer side.
 # from inside the code repo
 python3 /path/to/wikikit.py registry init               # minimal registry: one codebase wiki, source local "."
 python3 /path/to/wikikit.py scaffold --wiki app-codebase
-#  ... run /spec-context — the Context Librarian walks the tree and DESCRIBES it (services,
+#  ... adopt the Context Librarian — it walks the tree and DESCRIBES it (services,
 #      api/endpoint, data model, config, dependency); it does not paste code ...
 python3 /path/to/wikikit.py lint   --wiki app-codebase
 python3 /path/to/wikikit.py commit --wiki app-codebase  # records .wiki-state.json for incremental refresh
@@ -72,10 +72,10 @@ python3 /path/to/wikikit.py sync --all     # clones the repo into .devloop/wikis
 python3 /path/to/wikikit.py lint --all     # checks [[app-codebase:…]] links resolve
 ```
 
-`/spec-requirements` and `/spec-stories` then read the compiled wiki and link with
+The Requirements Analyst and Story Writer then read the compiled wiki and link with
 `[[app-codebase:AuthService]]`; the Jira Organizer derives **Components** from its services/modules.
 
-**Refresh:** when the code changes, the repo owners re-run `/spec-context` (only changed files
+**Refresh:** when the code changes, the repo owners re-run the Context Librarian (only changed files
 recompile, via the SHA cache), `commit`, and push; consumers `sync --all`.
 
 Notes: `sync` shallow-clones the whole repo, so the code files land on disk — but the agent only
