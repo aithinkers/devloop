@@ -28,6 +28,8 @@ are host-native and work wherever the host runs.
 ```bash
 # One-liner (clones into ~/.devloop and runs the installer):
 curl -fsSL https://raw.githubusercontent.com/aithinkers/devloop/main/install.sh | sh
+# …pass install flags after `-s --`, e.g. just Kiro into your home dir:
+curl -fsSL https://raw.githubusercontent.com/aithinkers/devloop/main/install.sh | sh -s -- --host kiro --scope home
 
 # …or from a clone:
 ./devloop install                       # all hosts, into ./ (project scope)
