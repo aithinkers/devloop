@@ -108,28 +108,28 @@ def registry(args):
         p = reg_path(args)
         if os.path.exists(p):
             sys.exit(f"{p} already exists")
-        skel = {
-            "version": 1,
-            "cache_dir": ".devloop/wikis",
-            "wikis": [
-                {"id": "project", "kind": "project", "role": "primary",
-                 "source": {"type": "local", "path": "."}, "wiki_path": "knowledge/wiki"},
-                {"id": "integrations", "kind": "integrations",
-                 "source": {"type": "git", "url": "<repo-url>", "ref": "main",
-                            "subpath": "", "contains": "sources"},
-                 "wiki_path": ".devloop/wikis/integrations/knowledge/wiki"},
-                {"id": "devops", "kind": "devops",
-                 "source": {"type": "git", "url": "<repo-url>", "ref": "main",
-                            "subpath": "", "contains": "sources"},
-                 "wiki_path": ".devloop/wikis/devops/knowledge/wiki"},
-                {"id": "app-codebase", "kind": "codebase",
-                 "source": {"type": "git", "url": "<repo-url>", "ref": "main",
-                            "subpath": "", "contains": "sources"},
-                 "wiki_path": ".devloop/wikis/app-codebase/knowledge/wiki"},
-            ],
-        }
+        project = {"id": "project", "kind": "project", "role": "primary",
+                   "source": {"type": "local", "path": "."}, "wiki_path": "knowledge/wiki"}
+        # --minimal: just the local project wiki (clean starting point for `devloop init`).
+        shared = [
+            {"id": "integrations", "kind": "integrations",
+             "source": {"type": "git", "url": "<repo-url>", "ref": "main",
+                        "subpath": "", "contains": "sources"},
+             "wiki_path": ".devloop/wikis/integrations/knowledge/wiki"},
+            {"id": "devops", "kind": "devops",
+             "source": {"type": "git", "url": "<repo-url>", "ref": "main",
+                        "subpath": "", "contains": "sources"},
+             "wiki_path": ".devloop/wikis/devops/knowledge/wiki"},
+            {"id": "app-codebase", "kind": "codebase",
+             "source": {"type": "git", "url": "<repo-url>", "ref": "main",
+                        "subpath": "", "contains": "sources"},
+             "wiki_path": ".devloop/wikis/app-codebase/knowledge/wiki"},
+        ]
+        skel = {"version": 1, "cache_dir": ".devloop/wikis",
+                "wikis": [project] if "--minimal" in args else [project, *shared]}
         save_registry(p, skel)
-        print(f"✓ wrote {p} — edit it to point at your real sources, then: wikikit.py sync --all")
+        print(f"✓ wrote {p}" + ("" if "--minimal" in args else
+              " — edit it to point at your real sources, then: wikikit.py sync --all"))
         return 0
     if sub == "list":
         p, reg = load_registry(args)

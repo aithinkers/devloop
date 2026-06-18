@@ -58,6 +58,24 @@ surface differs by host: **Claude Code** has `/spec-context`, `/spec-requirement
 (plus `context-librarian`/`business-analyst`/`requirements-analyst` subagents); **Kiro** and
 **Codex** invoke the role skill (`$context-librarian` or the `/skills` picker).
 
+## Try it in 5 minutes
+
+`devloop init` scaffolds a ready-to-run project (registry + `knowledge/`); `--sample` pre-loads
+the bundled SSO/Email/SFTP sources so you can run the chain immediately:
+
+```bash
+./devloop install --host claude     # or kiro / codex
+mkdir demo && cd demo
+/path/to/devloop init --sample      # devloop.wikis.json + knowledge/ + 3 seeded sources
+```
+
+Then, in your agent: adopt the **Context Librarian** to compile the seeded sources into a wiki,
+then the **Requirements Analyst** for a feature like *"self-service partner SFTP onboarding."*
+Compare what you get to [examples/sample-output/](examples/sample-output/).
+
+**No sources of your own?** Skip the wiki entirely and start at the **Requirements Analyst** — it
+runs cold and just interviews you. (Add `--jira` to `init` to also scaffold `devloop.jira.json`.)
+
 ## How it works
 
 When you ask to build something, DevLoop *doesn't* jump to stories. It steps back through a chain
@@ -177,12 +195,12 @@ Claude and Codex layouts are built to the documented conventions.
 ## Testing
 
 ```bash
-bash test/smoke_test.sh    # 46 checks, no LLM, no network
+bash test/smoke_test.sh    # 48 checks, no LLM, no network
 ```
 
 End to end: registry + scaffold, change-detection, the compile step, lint + incremental cache, a
 git-backed wiki, cross-wiki lint, Jira validation, build freshness, single-source skills, and
-all-host install/uninstall. Expect `46 passed, 0 failed`.
+all-host install/uninstall. Expect `48 passed, 0 failed`.
 
 ## How it's built
 

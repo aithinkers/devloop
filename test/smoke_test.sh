@@ -387,6 +387,22 @@ python3 "$HERE/tools/ingest.py" src --wiki project >/dev/null
   || no "--wiki path did not land raw/ via registry"
 cd "$TMP"
 
+echo "[13c] devloop init scaffolds a ready-to-run project (minimal registry + sample + jira)"
+IT="$TMP/init"; mkdir -p "$IT"
+( cd "$IT" && HOME="$IT" "$HERE/devloop" init --sample --jira >/dev/null 2>&1 )
+init_ok=1
+python3 -c "import json,sys; w=[x['id'] for x in json.load(open(sys.argv[1]))['wikis']]; sys.exit(0 if w==['project'] else 1)" "$IT/devloop.wikis.json" || init_ok=0
+for f in knowledge/raw/sso.md knowledge/raw/sftp.md knowledge/raw/email.md devloop.jira.json knowledge/wiki; do
+  [ -e "$IT/$f" ] || { init_ok=0; echo "    missing: $f"; }
+done
+[ "$init_ok" = 1 ] && ok "init: minimal (project-only) registry + scaffolded knowledge/ + seeded sample + jira config" \
+  || no "devloop init scaffold incomplete"
+# never clobbers an existing registry
+printf '{"_sentinel":"keep","version":1,"cache_dir":".devloop/wikis","wikis":[{"id":"project","kind":"project","role":"primary","source":{"type":"local","path":"."},"wiki_path":"knowledge/wiki"}]}\n' > "$IT/devloop.wikis.json"
+( cd "$IT" && HOME="$IT" "$HERE/devloop" init >/dev/null 2>&1 )
+grep -q '_sentinel' "$IT/devloop.wikis.json" && ok "init never clobbers an existing devloop.wikis.json" || no "init clobbered the registry"
+cd "$TMP"
+
 echo "[14] Codex installs the shared Agent Skills to .agents/skills (no deprecated prompts)"
 CX="$TMP/codex"; mkdir -p "$CX"
 HOME="$CX" CODEX_HOME="$CX/.codex" "$HERE/devloop" install --host codex --scope home >/dev/null

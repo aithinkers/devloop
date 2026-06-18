@@ -3,6 +3,7 @@
 #
 #   devloop install   [--host claude|kiro|codex|all] [--scope project|home] [--dry-run]
 #   devloop uninstall [--host ...] [--scope ...] [--dry-run]
+#   devloop init      [--sample] [--jira] [--dry-run]   # scaffold a DevLoop project in ./
 #   devloop list      [--host ...] [--scope ...]
 #   devloop doctor
 #   devloop build     [--check]      # (contributors) regenerate platform folders from core/
@@ -103,6 +104,28 @@ list_host(){ case "$1" in
 esac; }
 
 # ---- doctor --------------------------------------------------------------------
+# ---- init: scaffold a DevLoop project in the current directory -----------------
+init(){ local sample=0 jira=0 wk; wk="$REPO/tools/wikikit.py"
+  while [ $# -gt 0 ]; do case "$1" in
+    --sample) sample=1; shift;; --jira) jira=1; shift;; --dry-run) DRY=1; shift;;
+    *) say "unknown option: $1 (init takes --sample --jira --dry-run)"; exit 2;; esac; done
+  say "$(c '1' "Scaffolding a DevLoop project in") $PWD"
+  if [ -e devloop.wikis.json ]; then say "  · devloop.wikis.json exists — keeping it";
+  else run python3 "$wk" registry init --minimal; fi
+  run python3 "$wk" scaffold --wiki project           # knowledge/{raw,wiki,sources}
+  if [ "$sample" = 1 ]; then
+    run cp "$REPO"/examples/integrations-src/*.md knowledge/raw/
+    [ "$DRY" = 1 ] || python3 "$wk" status --wiki project   # show the seeded sources
+  fi
+  if [ "$jira" = 1 ]; then
+    [ -e devloop.jira.json ] && say "  · devloop.jira.json exists — keeping it" \
+                             || run python3 "$wk" jira init
+  fi
+  say "$(c '1;32' "Ready.")  Next, in your agent (Claude/Kiro/Codex):"
+  if [ "$sample" = 1 ]; then say "  • adopt the Context Librarian to compile the seeded sources into a wiki, then the Requirements Analyst";
+  else say "  • add sources under knowledge/raw/ (or run ingest.py on a folder), adopt the Context Librarian — or skip straight to the Requirements Analyst to start cold"; fi
+}
+
 doctor(){
   say "$(c '1' "devloop $VERSION")  ·  repo: $REPO"
   for t in bash python3 git; do
@@ -144,6 +167,7 @@ cmd="${1:-help}"; shift || true
 case "$cmd" in
   install)   parse "$@"; validate; say "$(c '1' "Installing DevLoop ($SCOPE scope)")"; for h in $(hosts); do install_$h "$SCOPE"; done; say "$(c '1;32' Done.)" ;;
   uninstall) parse "$@"; validate; say "$(c '1' "Uninstalling DevLoop ($SCOPE scope)")"; for h in $(hosts); do uninstall_$h "$SCOPE"; done; say "$(c '1;32' Done.)" ;;
+  init)      init "$@" ;;
   list)      parse "$@"; validate; for h in $(hosts); do list_host "$h" "$SCOPE"; done ;;
   doctor)    doctor ;;
   build)     CHECK=0; parse "$@"; [ "${CHECK:-0}" = 1 ] && exec python3 "$REPO/build/build.py" --check || exec python3 "$REPO/build/build.py" ;;

@@ -1,6 +1,6 @@
 {
   "name": "devloop",
-  "version": "0.13.2",
+  "version": "0.14.0",
   "description": "A gstack/Superpowers-style role chain for business analysis: compile a library of LLM-Wikis (project, integrations, devops, codebase) from local and git-backed sources, elicit requirements grounded in them, convert to epics and INVEST user stories with Gherkin acceptance criteria, quality-review, and produce a Jira organization plan.",
   "author": {
     "name": "aithinkers",

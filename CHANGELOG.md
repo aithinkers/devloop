@@ -2,6 +2,19 @@
 
 All notable changes to DevLoop are documented here. Versioning is semantic.
 
+## [0.14.0]
+First-use approachability — a real **`devloop init`** so developers don't hand-edit registries:
+- **`devloop init [--sample] [--jira]`** scaffolds a ready-to-run project in the current dir: a
+  minimal single-`project` `devloop.wikis.json`, the `knowledge/` structure, optionally the
+  bundled SSO/Email/SFTP sample sources (`--sample`, so you can run the chain immediately) and a
+  `devloop.jira.json` (`--jira`). Never clobbers existing files; supports `--dry-run`.
+- New `wikikit.py registry init --minimal` (single local `project` wiki) backs it.
+- README gains a **"Try it in 5 minutes"** walkthrough (install → `init --sample` → run the
+  chain → compare to the sample output) plus an explicit **cold-start** path (no sources? start
+  at the Requirements Analyst).
+- **tests:** 46 → 48 (`devloop init` scaffolds the minimal registry + sample + jira, and never
+  clobbers an existing registry).
+
 ## [0.13.2]
 Packaging/presentation pass (the engine was ahead of the docs):
 - **Host-neutral shared docs.** Removed Claude-only `/spec-*` wording from cross-host sections
