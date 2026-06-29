@@ -2,6 +2,25 @@
 
 All notable changes to DevLoop are documented here. Versioning is semantic.
 
+## [0.17.0]
+Open Knowledge Format (OKF) interop — DevLoop's LLM-Wiki is a superset of Google Cloud's
+[Open Knowledge Format](https://github.com/GoogleCloudPlatform/knowledge-catalog); these
+additions let DevLoop wikis interoperate with the OKF ecosystem without losing DevLoop's
+multi-wiki registry, cross-wiki namespacing, source-IDs, or `kind` profiles:
+- **`wikikit.py export --okf`** — emit a portable OKF bundle: rewrites `[[wikilinks]]` (and
+  `[[Concept|alias]]`) to bundle-relative markdown links that render on GitHub and need no
+  resolver, synthesizes a per-concept `# Citations` section from `sources:` frontmatter +
+  `sources/INDEX.md`, and stamps `okf_version: "0.1"` on the root `index.md`. Cross-wiki
+  `[[ns:Concept]]` and unresolved links render as plain text (bundles are self-contained).
+- **`wikikit.py okf-lint`** — conformance check: flags concept files missing the required
+  OKF `type`, and notes remaining `[[wikilinks]]` / a missing root `okf_version`.
+- **Templates** — the concept template gains OKF-recommended `description` / `resource`
+  frontmatter; the index template gains root `okf_version`.
+- **`docs/okf.md`** — the mapping, export/consume workflow, and the `[[wikilinks]]`-vs-markdown
+  tradeoff; linked from the README documentation index and the Context Librarian role.
+- **tests:** 51 → 53 — guards that `export --okf` produces markdown links + `# Citations` +
+  `okf_version` (and no residual `[[wikilinks]]`), and that `okf-lint` catches a missing `type`.
+
 ## [0.16.0]
 Docs as a product surface (landing page + focused guides), per the ECC product-discipline review:
 - **`DEVLOOP-QUICK-REF.md`** — one-page cheat sheet: which-lane decision guide, per-host

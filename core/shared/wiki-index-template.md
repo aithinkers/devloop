@@ -1,3 +1,7 @@
+---
+okf_version: "0.1"       # Open Knowledge Format compatibility (root index only)
+---
+
 # Knowledge Wiki — Index
 
 _Compiled by the Context Librarian from `sources/INDEX.md`. This is the routing layer:

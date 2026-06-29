@@ -443,6 +443,68 @@ mdout="$( cd "$ST" && "$HERE/devloop" status --markdown 2>&1 )"
   || no "status --markdown output incomplete"
 cd "$TMP"
 
+echo "[13e] wikikit export --okf emits a portable OKF bundle (markdown links + # Citations + okf_version)"
+OK="$TMP/okf"; mkdir -p "$OK"
+( cd "$OK"
+  python3 "$WK" scaffold knowledge >/dev/null
+  cat > knowledge/wiki/concepts/SSO.md <<'EOF'
+---
+title: SSO
+type: integration
+sources: [S1]
+status: published
+confidence: high
+updated: 2026-06-14
+---
+# SSO
+Okta SAML [S1]. Related [[Transactional Email]] and [[integrations:Webhooks]].
+EOF
+  cat > knowledge/wiki/concepts/Transactional-Email.md <<'EOF'
+---
+title: Transactional Email
+type: integration
+sources: [S2]
+status: published
+confidence: high
+updated: 2026-06-14
+---
+# Transactional Email
+AWS SES [S2]. Used with [[SSO]].
+EOF
+  printf '# Knowledge Wiki — Index\n## Integrations\n- [[SSO]]\n- [[Transactional Email]]\n' > knowledge/wiki/index.md
+  cat > knowledge/sources/INDEX.md <<'EOF'
+# Source Index
+
+| ID | Title | Type(s) | Location / URL | Owner | Date | Summary |
+|---|---|---|---|---|---|---|
+| S1 | Okta SSO spec | integration spec | https://example/sso | IT | 2026-01 | SAML/OIDC |
+| S2 | SES runbook | product docs | https://example/ses | Ops | 2026-02 | email sending |
+EOF
+  python3 "$WK" export --okf knowledge --out okf-bundle >/dev/null
+)
+if python3 - "$OK/okf-bundle" <<'PY'
+import sys, os
+b = sys.argv[1]
+sso = open(os.path.join(b, "concepts", "SSO.md"), encoding="utf-8").read()
+idx = open(os.path.join(b, "index.md"), encoding="utf-8").read()
+fails = []
+if "](/concepts/Transactional-Email.md)" not in sso: fails.append("wikilink not rewritten to markdown link")
+if "[[" in sso: fails.append("residual [[wikilink]]")
+if "# Citations" not in sso: fails.append("no # Citations section")
+if "Okta SSO spec" not in sso: fails.append("citation not resolved from sources index")
+if "integrations:Webhooks" not in sso: fails.append("cross-wiki link text dropped")
+if "okf_version" not in idx: fails.append("root index missing okf_version")
+if fails: print("; ".join(fails)); sys.exit(1)
+PY
+then ok "export --okf: markdown links + # Citations + okf_version, no [[wikilinks]]"; else no "export --okf bundle malformed"; fi
+cd "$TMP"
+
+echo "[13f] wikikit okf-lint flags a concept missing the required OKF type"
+printf -- '---\ntitle: No Type\nsources: [S1]\n---\n# No Type\nbody [S1].\n' > "$OK/knowledge/wiki/concepts/NoType.md"
+lintout="$( cd "$OK" && python3 "$WK" okf-lint knowledge 2>&1 || true )"
+if printf '%s' "$lintout" | grep -q 'missing required OKF .type'; then ok "okf-lint catches missing type"; else no "okf-lint missed a type violation"; fi
+cd "$TMP"
+
 echo "[14] Codex installs the shared Agent Skills to .agents/skills (no deprecated prompts)"
 CX="$TMP/codex"; mkdir -p "$CX"
 HOME="$CX" CODEX_HOME="$CX/.codex" "$HERE/devloop" install --host codex --scope home >/dev/null

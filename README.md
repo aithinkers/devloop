@@ -220,6 +220,8 @@ Full design: [docs/architecture.md](docs/architecture.md) · contributing: [CONT
 - [docs/org-rollout.md](docs/org-rollout.md) — shared wikis, Jira org, and multi-team adoption.
 - [docs/architecture.md](docs/architecture.md) — `core/ → skills/ → host wrappers` and the
   no-drift guarantees.
+- [docs/okf.md](docs/okf.md) — interop with the **Open Knowledge Format** (Google Cloud's
+  knowledge-bundle standard): `export --okf` / `okf-lint`.
 - [examples/sample-output/](examples/sample-output/) — a full worked chain (BRD → … → Jira plan).
 
 ## License

@@ -1,6 +1,8 @@
 ---
 title: <Concept name>
 type: concept            # system | integration | process | term | decision | standard
+description: <one-line summary>   # OKF-recommended; helps progressive disclosure
+resource: <uri or path>           # OKF-recommended; the asset this concept describes (omit if none)
 sources: [S?, S?]        # source IDs from sources/INDEX.md
 status: draft            # draft | published
 confidence: medium       # low | medium | high

@@ -73,6 +73,9 @@ Use `tools/wikikit.py` (stdlib only, no LLM):
 - `scaffold --wiki ID`, `status --wiki ID`, `commit --wiki ID`, `lint --wiki ID` —
   per-wiki structure / change detection / hash recording / link check.
 - `lint --all` — validate cross-wiki `[[namespace:Concept]]` links across the registry.
+- `okf-lint --wiki ID` / `export --okf --wiki ID [--out PATH]` — check **Open Knowledge
+  Format** conformance, and emit a portable OKF bundle (wikilinks → markdown links,
+  `sources` → `# Citations`). Use when sharing a wiki with non-DevLoop tools. See `docs/okf.md`.
 
 ## Build pipeline (per wiki)
 1. **Sync** the source (`wikikit.py sync ID`). For a fresh git wiki it clones; on refresh it

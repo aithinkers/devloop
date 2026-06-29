@@ -28,8 +28,16 @@ Usage:
   wikikit.py status   (--wiki ID | DIR)        # new / changed / unchanged raw sources
   wikikit.py commit   (--wiki ID | DIR)        # record source hashes after compiling
   wikikit.py lint     (--wiki ID | DIR | --all)# broken/orphan links (+cross-wiki with --all)
+  wikikit.py okf-lint (--wiki ID | DIR)         # check Open Knowledge Format (OKF v0.1) conformance
+  wikikit.py export --okf (--wiki ID | DIR) [--out PATH]  # emit a portable OKF bundle
   wikikit.py jira init [--path devloop.jira.json]   # scaffold a Jira config (BA + TECH)
   wikikit.py jira validate [--path ...]             # validate the Jira config
+
+OKF interop: DevLoop wikis are a superset of the Open Knowledge Format
+(github.com/GoogleCloudPlatform/knowledge-catalog). `export --okf` rewrites
+[[wikilinks]] to portable bundle-relative markdown links, maps `sources:`
+frontmatter + the sources index into per-concept `# Citations`, and stamps
+`okf_version` on the root index — producing a bundle other OKF tools can read.
 """
 import sys, os, re, json, hashlib, subprocess, time
 
@@ -419,13 +427,139 @@ def jira(args):
         return 1 if issues else 0
     sys.exit("usage: wikikit.py jira (init|validate)")
 
+# ------------------------------- OKF interop ---------------------------------
+# Open Knowledge Format v0.1 (github.com/GoogleCloudPlatform/knowledge-catalog):
+# markdown + YAML frontmatter "knowledge bundles" with a required `type`, standard
+# (bundle-relative) markdown links, and an `index.md` with `okf_version` at the root.
+# DevLoop's wiki is a superset; these commands check conformance and emit a portable bundle.
+
+def _split_fm(text):
+    """Return (frontmatter_inner, body). frontmatter_inner is None when absent."""
+    if text.startswith("---\n"):
+        end = text.find("\n---", 4)
+        if end != -1:
+            rest = text[end + 4:]
+            return text[4:end], rest[1:] if rest.startswith("\n") else rest
+    return None, text
+
+def _join_fm(fm, body):
+    return body if fm is None else f"---\n{fm}\n---\n\n{body.lstrip(chr(10))}"
+
+def _fm_get(fm, key):
+    if not fm:
+        return None
+    m = re.search(rf"^{re.escape(key)}:\s*(.+?)\s*(?:#.*)?$", fm, re.M)
+    return m.group(1).strip() if m else None
+
+def _fm_set(fm, key, val):
+    line = f"{key}: {val}"
+    if fm is None:
+        return line
+    if re.search(rf"^{re.escape(key)}:", fm, re.M):
+        return re.sub(rf"^{re.escape(key)}:.*$", line, fm, count=1, flags=re.M)
+    return fm + "\n" + line
+
+def _load_sources(k):
+    """Parse knowledge/sources/INDEX.md → {S-ID: 'Title — Location — Summary'}."""
+    p = os.path.join(k, "sources", "INDEX.md")
+    out = {}
+    if not os.path.exists(p):
+        return out
+    for line in open(p, encoding="utf-8", errors="ignore"):
+        cells = [c.strip() for c in line.split("|")]
+        if len(cells) >= 3 and re.fullmatch(r"S\d+", cells[1] or ""):
+            title = cells[2] if len(cells) > 2 else ""
+            loc = cells[4] if len(cells) > 4 else ""
+            summary = cells[7] if len(cells) > 7 else ""
+            out[cells[1]] = " — ".join(x for x in (title, loc, summary) if x) or cells[1]
+    return out
+
+def _citations(fm, src):
+    sids = re.findall(r"S\d+", _fm_get(fm, "sources") or "")
+    if not sids:
+        return ""
+    return "\n".join(f"[{s}] {src.get(s, '(see sources index)')}" for s in sids) + "\n"
+
+def _rewrite_wikilinks(text, by_norm):
+    """[[Concept]] / [[Concept|alias]] → bundle-relative markdown links.
+    Cross-wiki [[ns:Concept]] and unresolved links render as plain text (OKF bundles
+    are self-contained, and we never fabricate a target path)."""
+    link_re = re.compile(r"\[\[([^\]|]+)(?:\|([^\]]+))?\]\]")
+    def repl(m):
+        tgt = m.group(1).strip()
+        alias = (m.group(2) or m.group(1)).strip()
+        if ":" in tgt:
+            return alias
+        f = by_norm.get(norm(tgt))
+        return f"[{alias}](/{f})" if f else alias
+    return link_re.sub(repl, text)
+
+def okf_lint(args):
+    k = resolve_dir(args)
+    wiki = os.path.join(k, "wiki")
+    if not os.path.isdir(wiki):
+        print(f"no wiki at {wiki}"); return 1
+    reserved = {"index.md", "log.md"}
+    arts = _articles(wiki)
+    problems = 0
+    for path in arts.values():
+        if os.path.basename(path) in reserved:
+            continue
+        fm, _ = _split_fm(open(path, encoding="utf-8", errors="ignore").read())
+        if not _fm_get(fm, "type"):
+            problems += 1
+            print(f"  {os.path.relpath(path, wiki)} → missing required OKF `type` frontmatter")
+    blob = "".join(open(p, encoding="utf-8", errors="ignore").read() for p in arts.values())
+    wl = len(re.findall(r"\[\[[^\]]+\]\]", blob))
+    if wl:
+        print(f"  note: {wl} [[wikilink]](s) present — not OKF-portable; run `export --okf` for a portable bundle")
+    idx = arts.get("index")
+    if idx:
+        ifm, _ = _split_fm(open(idx, encoding="utf-8", errors="ignore").read())
+        if not _fm_get(ifm, "okf_version"):
+            print("  note: root index.md has no `okf_version` — `export --okf` stamps it")
+    print(f"-- okf-lint {os.path.basename(k)}: {problems} conformance issue(s), {len(arts)} files --")
+    return 1 if problems else 0
+
+def export(args):
+    if "--okf" not in args:
+        sys.exit("usage: wikikit.py export --okf (--wiki ID | DIR) [--out PATH]")
+    k = resolve_dir(args)
+    wiki = os.path.join(k, "wiki")
+    if not os.path.isdir(wiki):
+        print(f"no wiki at {wiki}"); return 1
+    out = os.path.abspath(opt(args, "--out") or os.path.join(k, "okf-export"))
+    arts = _articles(wiki)
+    by_norm = {norm(n): os.path.relpath(p, wiki).replace(os.sep, "/")
+               for n, p in arts.items()}
+    src = _load_sources(k)
+    n = 0
+    for name, path in arts.items():
+        relpath = os.path.relpath(path, wiki).replace(os.sep, "/")
+        fm, body = _split_fm(open(path, encoding="utf-8", errors="ignore").read())
+        body = _rewrite_wikilinks(body, by_norm)
+        if relpath == "index.md":
+            fm = _fm_set(fm, "okf_version", '"0.1"')
+        else:
+            cites = _citations(fm, src)
+            if cites and "# Citations" not in body:
+                body = body.rstrip() + "\n\n# Citations\n" + cites
+        dest = os.path.join(out, relpath)
+        os.makedirs(os.path.dirname(dest), exist_ok=True)
+        open(dest, "w", encoding="utf-8").write(_join_fm(fm, body))
+        n += 1
+    print(f"✓ OKF bundle: {out} ({n} files, okf_version 0.1)")
+    print("  [[wikilinks]] → bundle-relative markdown links; sources → per-concept # Citations.")
+    return 0
+
 # -------------------------------- main ---------------------------------------
 def main():
     if len(sys.argv) < 2:
         print(__doc__); sys.exit(2)
     cmd = sys.argv[1]
     table = {"registry": registry, "sync": sync, "scaffold": scaffold,
-             "status": status, "commit": commit, "lint": lint, "jira": jira}
+             "status": status, "commit": commit, "lint": lint, "jira": jira,
+             "okf-lint": okf_lint, "export": export}
     if cmd not in table:
         print(__doc__); sys.exit(2)
     sys.exit(table[cmd](sys.argv) or 0)
